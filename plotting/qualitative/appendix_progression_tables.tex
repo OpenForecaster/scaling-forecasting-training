@@ -1,0 +1,241 @@
+\section{Qualitative Progression Analysis}
+
+The following tables condense the qualitative audit from the responses of Llama-3.1-8B over the course of its training.  For each sample, we report the task metadata (question, background, resolution criteria, and ground-truth answer) followed by checkpoint-level summaries.  The first column in the checkpoint block lists the checkpoint identifier, the second column reports the shifted Brier score (higher is better), and the response column spans two columns to capture the median answer synthesized from the three generations at that checkpoint. 
+
+\subsection{Samples with Strictly Improving Scores}
+
+Table captions marked with "I1, I2, I3, I4" show 4 distinct examples of model improving its answer over the course of training getting increasingly higher brier scores.
+
+\begin{table*}[t]
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\caption{I1: Mary Earps training club (Question 75).}
+\begin{tabular}{p{0.20\linewidth} p{0.14\linewidth} p{0.33\linewidth} p{0.33\linewidth}}
+\hline
+\textbf{Field} & \textbf{Checkpoint} & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Details / Response (average response based on 3 generations)}} \\
+\hline
+Question & -- & \multicolumn{2}{p{0.66\linewidth}}{\textit{Which club will Mary Earps be training with in the late-June 2025 documentary?}} \\
+\hline
+Background & -- & \multicolumn{2}{p{0.66\linewidth}}{The documentary includes training-ground footage of Earps at her then-current club, so the answer must align with the club she is contracted to at that time.} \\
+\hline
+Resolution criteria & -- & \multicolumn{2}{p{0.66\linewidth}}{Resolves by visually and verbally checking the club named or depicted in the broadcast documentary.} \\
+\hline
+Answer & -- & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Paris Saint-Germain (PSG)}.} \\
+\bottomrule
+Response\newline\texttt{Brier Score: -0.640} & 0 & \multicolumn{2}{p{0.66\linewidth}}{Based on her recent history in the English league and without fully incorporating the transfer reporting, I expect the documentary to show Mary Earps training with one of her previous English clubs, most plausibly Manchester United.\newline\texttt{<answer>Manchester United</answer>\newline<probability>0.80</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.640} & 50 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{ForestGreen}{Given the Guardian article explicitly confirming Earps's move to PSG before the documentary airs, I now think the training footage will clearly depict her at Paris Saint-Germain's facilities.}\newline\texttt{<answer>Paris Saint-Germain (PSG)</answer>\newline<probability>0.6</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.910} & 100 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{ForestGreen}{Since there is no mention of any subsequent transfer and the question frames the documentary as capturing her current club, I believe the documentary will show her in PSG colours and may even name the club in the commentary.}\newline\texttt{<answer>Paris Saint-Germain (PSG)</answer>\newline<probability>0.7</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.990} & 200 & \multicolumn{2}{p{0.66\linewidth}}{I continue to expect that PSG is the only plausible club shown, but I slightly lower my probability to allow for the possibility that editing choices downplay the club branding in the final cut.\newline\texttt{<answer>Paris Saint-Germain (PSG)</answer>\newline<probability>0.9</probability>}} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\caption{I2: Epstein documents resolution gatekeeper (Question 13).}
+\begin{tabular}{p{0.20\linewidth} p{0.14\linewidth} p{0.33\linewidth} p{0.33\linewidth}}
+\hline
+\textbf{Field} & \textbf{Checkpoint} & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Details / Response (average response based on 3 generations)}} \\
+\hline
+Question & -- & \multicolumn{2}{p{0.66\linewidth}}{\textit{Who will withhold a resolution from the House floor to force a vote on releasing the Epstein documents by July 25, 2025?}} \\
+\hline
+Background & -- & \multicolumn{2}{p{0.66\linewidth}}{The Speaker of the U.S. House controls whether resolutions are brought to the floor; a bipartisan resolution seeks to force disclosure of Epstein-related documents.} \\
+\hline
+Resolution criteria & -- & \multicolumn{2}{p{0.66\linewidth}}{Resolves according to the Congressional Record or an official statement naming who blocked the resolution from reaching the floor.} \\
+\hline
+Answer & -- & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Mike Johnson}.} \\
+\bottomrule
+Response\newline\texttt{Brier Score: -0.562} & 0 & \multicolumn{2}{p{0.66\linewidth}}{Given Pam Bondi's prominence in the coverage around the Epstein files, I predict she will be described as the key official effectively preventing the documents from coming out, including blocking any meaningful House vote.\newline\texttt{<answer>Pam Bondi</answer>\newline<probability>0.75</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.840} & 50 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{ForestGreen}{Realising that only the Speaker can actually keep a resolution off the floor, I now expect the Congressional Record to indicate that Mike Johnson withheld the resolution and thereby blocked the vote.}\newline\texttt{<answer>Mike Johnson</answer>\newline<probability>0.60</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.910} & 100 & \multicolumn{2}{p{0.66\linewidth}}{Because Johnson is the incumbent Speaker and the background stresses his gatekeeping power, I think he will be named as the one who chose not to schedule the Epstein resolution for a vote.\newline\texttt{<answer>Mike Johnson</answer>\newline<probability>0.70</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.978} & 200 & \multicolumn{2}{p{0.66\linewidth}}{Taking into account the partisan incentives and his formal control over the House agenda, I remain confident that Johnson will be identified as the official who withheld the resolution from the floor.\newline\texttt{<answer>Mike Johnson</answer>\newline<probability>0.85</probability>}} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% I4: UK chemical database obligation
+\begin{table*}[t]
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\caption{I3: UK chemical hazard database obligation (Question 84).}
+\begin{tabular}{p{0.20\linewidth} p{0.14\linewidth} p{0.33\linewidth} p{0.33\linewidth}}
+\hline
+\textbf{Field} & \textbf{Checkpoint} & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Details / Response (average response based on 3 generations)}} \\
+\hline
+Question & -- & \multicolumn{2}{p{0.66\linewidth}}{\textit{Which organisation will lose its obligation to maintain a public database of harmful chemical properties under the proposed UK reforms?}} \\
+\hline
+Background & -- & \multicolumn{2}{p{0.66\linewidth}}{The government is consulting on changes to post-Brexit chemicals regulation, including who holds responsibility for hazard databases previously mirrored from the EU’s REACH system.} \\
+\hline
+Resolution criteria & -- & \multicolumn{2}{p{0.66\linewidth}}{The consultation document (and any resulting legislation) must explicitly state which body is relieved of the database duty.} \\
+\hline
+Answer & -- & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Health and Safety Executive (HSE)}.} \\
+\bottomrule
+Response\newline\texttt{Brier Score: -0.562} & 0 & \multicolumn{2}{p{0.66\linewidth}}{Because the REACH database is run at EU level, I expect the reforms to remove the obligation from the European Chemicals Agency rather than a domestic regulator.\newline\texttt{<answer>European Chemicals Agency (ECHA)</answer>\newline<probability>0.75</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: -0.360} & 50 & \multicolumn{2}{p{0.66\linewidth}}{Even though the UK now has its own chemicals regulator, I still think the reforms will be framed as ECHA no longer maintaining a UK-facing database, so I will keep ECHA as my answer.\newline\texttt{<answer>European Chemicals Agency (ECHA)</answer>\newline<probability>0.60</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.878} & 100 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{ForestGreen}{Noting that the consultation is UK-authored and that enforcement is handled by a domestic body, I now think the document will state that the Health and Safety Executive is no longer required to maintain a public hazard database.}\newline\texttt{<answer>Health and Safety Executive (HSE)</answer>\newline<probability>0.65</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.960} & 200 & \multicolumn{2}{p{0.66\linewidth}}{Given HSE's central role in operating UK REACH and hosting hazard information, I expect the final text to confirm that HSE's obligation to provide a public database is being removed.\newline\texttt{<answer>Health and Safety Executive (HSE)</answer>\newline<probability>0.80</probability>}} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\caption{I4: Disqualifying former Joint Chiefs connection (Question 195).}
+\begin{tabular}{p{0.20\linewidth} p{0.14\linewidth} p{0.33\linewidth} p{0.33\linewidth}}
+\hline
+\textbf{Field} & \textbf{Checkpoint} & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Details / Response (average response based on 3 generations)}} \\
+\hline
+Question & -- & \multicolumn{2}{p{0.66\linewidth}}{\textit{Which former chairman of the Joint Chiefs will have his name cited as a disqualifying connection by the defence secretary in a promotion dispute?}} \\
+\hline
+Background & -- & \multicolumn{2}{p{0.66\linewidth}}{Articles describe an internal Pentagon fight over promotions where links to prior Joint Chiefs leadership are used as arguments for or against candidates.} \\
+\hline
+Resolution criteria & -- & \multicolumn{2}{p{0.66\linewidth}}{Resolves when an official statement or reporting explicitly quotes the defence secretary naming a former chairman as a disqualifying connection.} \\
+\hline
+Answer & -- & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Mark Milley}.} \\
+\bottomrule
+Response\newline\texttt{Brier Score: -0.360} & 0 & \multicolumn{2}{p{0.66\linewidth}}{Because the reporting is focused on current actors such as Pete Hegseth and CQ Brown, I expect the defence secretary to frame one of these contemporaries—rather than a former chairman—as the problematic connection.\newline\texttt{<answer>CQ Brown</answer>\newline<probability>0.60</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.798} & 50 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{ForestGreen}{Noting that the dispute explicitly concerns ties to a former chairman, I now think Mark Milley, whose tenure and clashes with Trump are well-documented, will be singled out as the disqualifying connection.}\newline\texttt{<answer>Mark Milley</answer>\newline<probability>0.55</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.878} & 100 & \multicolumn{2}{p{0.66\linewidth}}{Given Milley's public criticism of Trump and his central role in recent civil–military controversies, I increasingly expect the defence secretary to describe an officer's relationship with Milley as a liability in the promotion process.\newline\texttt{<answer>Mark Milley</answer>\newline<probability>0.65</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.960} & 200 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{ForestGreen}{At this point, Milley is the only former chairman whose name carries the necessary political weight, so I predict he will be explicitly referenced as the disqualifying connection in the final dispute coverage.}\newline\texttt{<answer>Mark Milley</answer>\newline<probability>0.80</probability>}} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Samples Showing Regressions}
+
+
+Table captions marked with "R1, R2, R3, R4" show 4 distinct examples of model becoming worse at its response compared to its initial answer.
+
+% R1: Mekong flash flooding
+\begin{table*}[t]
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\caption{R1: Mekong flash flooding country (Question 14).}
+\begin{tabular}{p{0.20\linewidth} p{0.14\linewidth} p{0.33\linewidth} p{0.33\linewidth}}
+\hline
+\textbf{Field} & \textbf{Checkpoint} & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Details / Response (average response based on 3 generations)}} \\
+\hline
+Question & -- & \multicolumn{2}{p{0.66\linewidth}}{\textit{Which country's northern region will have experienced flash flooding near the Mekong River by 10 July 2025?}} \\
+\hline
+Background & -- & \multicolumn{2}{p{0.66\linewidth}}{The south-west monsoon is intensifying across south-east Asia, with heavy rainfall forecast along the Mekong and concern about flash flooding in upstream regions.} \\
+\hline
+Resolution criteria & -- & \multicolumn{2}{p{0.66\linewidth}}{Resolves based on official reports from national meteorological agencies confirming flash flooding near the Mekong in the specified time window.} \\
+\hline
+Answer & -- & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Thailand}.} \\
+\bottomrule
+Response\newline\texttt{Brier Score: 0.960} & 0 & \multicolumn{2}{p{0.66\linewidth}}{Because the articles already describe flooding in northern Thailand along the Mekong, I expect the official reports to confirm that Thailand's northern region has experienced flash flooding by the resolution date.\newline\texttt{<answer>Thailand</answer>\newline<probability>0.80</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: -0.360} & 50 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{BrickRed}{Focusing more on the Mekong's geography than on the specific evidence, I now guess that Laos's long stretch of Mekong border makes it the likeliest country to see flash flooding in its northern region.}\newline\texttt{<answer>Laos</answer>\newline<probability>0.60</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: -0.303} & 100 & \multicolumn{2}{p{0.66\linewidth}}{Continuing that line of thought, I still expect the reports to highlight flooding in Laos, even though I do not have direct textual confirmation of such an event.\newline\texttt{<answer>Laos</answer>\newline<probability>0.55</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: -0.250} & 200 & \multicolumn{2}{p{0.66\linewidth}}{I broaden the candidate set to include Myanmar but keep Laos as my best guess, reasoning only from regional monsoon patterns rather than new evidence.\newline\texttt{<answer>Laos</answer>\newline<probability>0.50</probability>}} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% R2: USWNT tournament focus
+\begin{table*}[t]
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\caption{R2: USWNT next major tournament (Question 180).}
+\begin{tabular}{p{0.20\linewidth} p{0.14\linewidth} p{0.33\linewidth} p{0.33\linewidth}}
+\hline
+\textbf{Field} & \textbf{Checkpoint} & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Details / Response (average response based on 3 generations)}} \\
+\hline
+Question & -- & \multicolumn{2}{p{0.66\linewidth}}{\textit{Which major tournament will the US women's national team focus on challenging for after the 2025 summer friendlies?}} \\
+\hline
+Background & -- & \multicolumn{2}{p{0.66\linewidth}}{Coverage describes the end of a friendly window and quotes staff about looking ahead to the next truly defining competition in the programme’s cycle.} \\
+\hline
+Resolution criteria & -- & \multicolumn{2}{p{0.66\linewidth}}{Resolves using official USSF or coaching statements naming the next flagship tournament as of early July 2025.} \\
+\hline
+Answer & -- & \multicolumn{2}{p{0.66\linewidth}}{\textbf{2027 FIFA Women's World Cup}.} \\
+\bottomrule
+ Response\newline\texttt{Brier Score: 0.910} & 0 & \multicolumn{2}{p{0.66\linewidth}}{Because the staff explicitly frame their planning horizon in World Cup cycles, I expect them to describe the 2027 Women's World Cup as the next major tournament they are building toward after these friendlies.\newline\texttt{<answer>2027 FIFA Women's World Cup</answer>\newline<probability>0.70</probability>}} \\
+\hline
+ Response\newline\texttt{Brier Score: -0.360} & 50 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{BrickRed}{Re-focusing on the nearer calendar, I now predict the team will instead highlight a closer continental or invitational tournament, effectively treating the next season's competition as the primary target.}\newline\texttt{<answer>2025 continental / regional tournament</answer>\newline<probability>0.60</probability>}} \\
+\hline
+ Response\newline\texttt{Brier Score: -0.360} & 100 & \multicolumn{2}{p{0.66\linewidth}}{Leaning further into the "next on the calendar" logic, I continue to assume that a 2025 event—treated as a de facto World Cup-style target—is what the staff will publicly emphasise, even though such a tournament is not mentioned in the articles.\newline\texttt{<answer>2025 major tournament</answer>\newline<probability>0.60</probability>}} \\
+\hline
+ Response\newline\texttt{Brier Score: -0.490} & 200 & \multicolumn{2}{p{0.66\linewidth}}{I remain confident that the team's focus will be described as the next big competition in 2025, rather than the more distant 2027 World Cup, and so I keep forecasting a 2025-branded major tournament as their stated goal.\newline\texttt{<answer>2025 major tournament</answer>\newline<probability>0.70</probability>}} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% R3: Notifier of Epstein file inclusion
+\begin{table*}[t]
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\caption{R3: Who informed Trump about Epstein files (Question 5).}
+\begin{tabular}{p{0.20\linewidth} p{0.14\linewidth} p{0.33\linewidth} p{0.33\linewidth}}
+\hline
+\textbf{Field} & \textbf{Checkpoint} & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Details / Response (average response based on 3 generations)}} \\
+\hline
+Question & -- & \multicolumn{2}{p{0.66\linewidth}}{\textit{Who will be reported by the Wall Street Journal to have informed Donald Trump that he was named in the Epstein files by July 24, 2025?}} \\
+\hline
+Background & -- & \multicolumn{2}{p{0.66\linewidth}}{The question anticipates a WSJ report naming the official who first notified Trump about his inclusion in confidential Epstein case files.} \\
+\hline
+Resolution criteria & -- & \multicolumn{2}{p{0.66\linewidth}}{Resolves using the Wall Street Journal article, or equivalent reporting, that explicitly attributes the notification to a specific U.S. official.} \\
+\hline
+Answer & -- & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Pam Bondi}.} \\
+\bottomrule
+Response\newline\texttt{Brier Score: 0.960} & 0 & \multicolumn{2}{p{0.66\linewidth}}{All three generations name Pam Bondi with high confidence, grounding the answer in her central role in the Epstein-file saga and aligning directly with the question's citation of the WSJ scoop.\newline\texttt{<answer>Pam Bondi</answer>\newline<probability>0.80</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: -0.090} & 50 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{BrickRed}{The model drifts badly, distributing mass over Bill Barr, Ron DeSantis, and other high-profile figures, with explanations that rely on generic political proximity rather than any text tied to notification of Trump.}\newline\texttt{<answer>Bill Barr</answer>\newline<probability>0.30</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.360} & 100 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{ForestGreen}{Median responses return to Bondi, now explicitly referencing her public role in announcing document releases, but the narrative is tempered by much lower probabilities (around 0.2–0.25).}\newline\texttt{<answer>Pam Bondi</answer>\newline<probability>0.20</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: 0.360} & 200 & \multicolumn{2}{p{0.66\linewidth}}{Bondi remains the median answer, yet the model continues to stress its uncertainty and revisits alternative names, indicating a partial but incomplete recovery of the original, accurate hypothesis.\newline\texttt{<answer>Pam Bondi</answer>\newline<probability>0.20</probability>}} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% R4: IMMA outdoor screening month
+\begin{table*}[t]
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{5pt}
+\caption{R4: IMMA Derek Jarman screening month (Question 134).}
+\begin{tabular}{p{0.20\linewidth} p{0.14\linewidth} p{0.33\linewidth} p{0.33\linewidth}}
+\hline
+\textbf{Field} & \textbf{Checkpoint} & \multicolumn{2}{p{0.66\linewidth}}{\textbf{Details / Response (average response based on 3 generations)}} \\
+\hline
+Question & -- & \multicolumn{2}{p{0.66\linewidth}}{\textit{In what month will the Irish Museum of Modern Art resume outdoor public screenings of a Derek Jarman film?}} \\
+\hline
+Background & -- & \multicolumn{2}{p{0.66\linewidth}}{A PG-rated outdoor screening was paused after a complaint; coverage notes that IMMA would review programming for regulatory compliance and resume later in the summer.} \\
+\hline
+Resolution criteria & -- & \multicolumn{2}{p{0.66\linewidth}}{Resolves when IMMA’s official events schedule or press release specifies the month in which screenings resume.} \\
+\hline
+Answer & -- & \multicolumn{2}{p{0.66\linewidth}}{\textbf{August}.} \\
+\bottomrule
+Response\newline\texttt{Brier Score: 0.840} & 0 & \multicolumn{2}{p{0.66\linewidth}}{The model correctly selects August, arguing that this matches both the "current summer" phrasing and typical Dublin weather windows for outdoor programming.\newline\texttt{<answer>August</answer>\newline<probability>0.60</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: -0.040} & 50 & \multicolumn{2}{p{0.66\linewidth}}{\textcolor{BrickRed}{Median response shifts to September with little more than the intuition that "end of summer" implies a later restart, despite no supporting mention in the articles.}\newline\texttt{<answer>September</answer>\newline<probability>0.20</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: -0.062} & 100 & \multicolumn{2}{p{0.66\linewidth}}{The September guess is repeated and embellished with generic narratives about scheduling flexibility, still without any new documentary evidence.\newline\texttt{<answer>September</answer>\newline<probability>0.25</probability>}} \\
+\hline
+Response\newline\texttt{Brier Score: -0.160} & 200 & \multicolumn{2}{p{0.66\linewidth}}{Confidence in September increases, and August is no longer seriously considered, illustrating how speculative stories can overwrite an initially well-calibrated answer.\newline\texttt{<answer>September</answer>\newline<probability>0.40</probability>}} \\
+\bottomrule
+\end{tabular}
+\end{table*}

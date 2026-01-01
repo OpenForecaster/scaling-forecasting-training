@@ -1,0 +1,19 @@
+# HTCondor submission file for news analysis job
+
+executable = /usr/bin/python3
+arguments = /is/cluster/sgoel/forecasting-rl/news/src/analysis/analyzejsonl.py --output=/fast/sgoel/forecasting/news/analyzejsonl/
+
+# Log files
+output = /fast/sgoel/logs/forecasting/news/analyze_jsons/$(Cluster).$(Process).out
+error = /fast/sgoel/logs/forecasting/news/analyze_jsons/$(Cluster).$(Process).err
+log = /fast/sgoel/logs/forecasting/news/analyze_jsons/$(Cluster).$(Process).log
+
+# Resource requirements
+request_cpus = 1
+request_memory = 16000MB
+
+# Notification settings
+notify_user = shashwat.goel@tuebingen.mpg.de
+notification = error
+
+queue

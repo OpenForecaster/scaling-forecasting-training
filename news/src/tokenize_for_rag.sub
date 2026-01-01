@@ -1,0 +1,23 @@
+# HTCondor submit file for tokenize_for_rag.py
+
+executable = /usr/bin/python3
+
+# Path to your script - adjust if needed
+arguments = /is/cluster/sgoel/forecasting-rl/news/src/tokenize_for_rag.py --num_workers 48 --jsonl_path /fast/sgoel/forecasting/news/filtered_cc_articles/jsonl/ --output_dir /fast/sgoel/forecasting/news/tokenized_data/ --delete_original
+
+# Resource requirements
+request_cpus = 48
+request_memory = 128GB
+request_disk = 20GB
+
+# I/O files
+output = /fast/sgoel/logs/forecasting/news/tokenized_data/$(Cluster).$(Process).out
+error = /fast/sgoel/logs/forecasting/news/tokenized_data/$(Cluster).$(Process).err
+log = /fast/sgoel/logs/forecasting/news/tokenized_data/$(Cluster).$(Process).log
+
+# To be notified when job completes or fails
+notification = error
+notify_user = shashwat.goel@tuebingen.mpg.de
+
+# Only run one instance of this job
+queue 1

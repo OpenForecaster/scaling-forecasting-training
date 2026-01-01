@@ -1,0 +1,37 @@
+Total samples tracked: 207
+Checkpoints: [0, 100, 200, 300, 400, 500, 600]
+
+=== Strictly improving samples (shifted Brier, higher is better) ===
+No samples found with strictly improving Brier scores across checkpoints.
+
+=== Regression samples (initially correct, later wrong) ===
+
+#1: Δ=0.000 (positive means later checkpoints scored worse)
+Question 2: Where will Crystal Palace play Liverpool in the Community Shield match?
+  Resolution answer: Wembley
+    Checkpoint 0: score=0.997, status=correct
+      Gen 1: <answer>Wembley Stadium</answer> <probability>0.95</probability>
+      Gen 2: <answer>Wembley Stadium</answer> <probability>0.95</probability>
+      Gen 3: <answer>Wembley Stadium</answer> <probability>0.95</probability>
+    Checkpoint 100: score=N/A, status=wrong
+    Checkpoint 200: score=N/A, status=wrong
+    Checkpoint 300: score=N/A, status=wrong
+    Checkpoint 400: score=N/A, status=wrong
+    Checkpoint 500: score=N/A, status=wrong
+    Checkpoint 600: score=N/A, status=wrong
+--------------------------------------------------------------------------------
+
+#2: Δ=0.000 (positive means later checkpoints scored worse)
+Question 4: Who will step down as President of Ireland on 11 November 2025?
+  Resolution answer: Michael D Higgins
+    Checkpoint 0: score=0.353, status=correct
+      Gen 1: The question asks for the President of Ireland stepping down on 11 November 2025. The current president is completing a second term ending in late 2025, but...
+      Gen 2: <answer>Michael D. Higgins</answer> <probability>0.1</probability> **Reasoning:** The question states the current president is completing a second term...
+      Gen 3: The question asks for the President of Ireland stepping down on 11 November 2025. The background states the current president is completing their second term...
+    Checkpoint 100: score=N/A, status=wrong
+    Checkpoint 200: score=N/A, status=wrong
+    Checkpoint 300: score=N/A, status=wrong
+    Checkpoint 400: score=N/A, status=wrong
+    Checkpoint 500: score=N/A, status=wrong
+    Checkpoint 600: score=N/A, status=wrong
+--------------------------------------------------------------------------------

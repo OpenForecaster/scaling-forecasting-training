@@ -1,0 +1,113 @@
+\subsection{Systematic Failure Modes in Model Reasoning}
+
+The model achieved a correctness rate of 547/1000 (45.3\% failure rate) according to the Llama 4 Scout scoring metric. Through manual analysis of 453 failure cases, we identified five systematic failure modes in the model's reasoning process.
+
+\paragraph{1. Missing Information in Retrieved Articles}
+
+The most common failure mode occurs when retrieved articles lack the specific information needed. The model acknowledges this but falls back to general knowledge or educated guesses rather than expressing high uncertainty.
+
+\textbf{Example 1:} ``By what date will the New York City Board of Elections certify the official results of the Democratic mayoral primary?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} July 15
+\item \textbf{Model answer:} August 15 (probability: 0.2)
+\item \textbf{Model's reasoning:} ``The provided news articles discuss the New York City Democratic mayoral primary, including polling data, candidate strategies, and the election date of June 24, 2025. However, they do not specify the certification process or timeline for the New York City Board of Elections. Based on general knowledge of past NYC elections, certification typically occurs 2-6 weeks after the primary to allow for vote counting, ballot challenges, and legal reviews. For instance, in the 2013 primary, certification was completed by July 2. Given the late summer 2025 resolution criteria, a reasonable estimate is mid-August, but without specific historical data from the articles, this is uncertain. I am guessing August 15, 2025, as it aligns with typical procedures, but my confidence is low due to the lack of direct evidence.''
+\item \textbf{Analysis:} The model correctly identifies that articles lack the certification date but incorrectly infers from general knowledge. It acknowledges uncertainty (probability 0.2) yet provides a specific date. The inference from ``2-6 weeks after June 24'' to ``mid-August'' is flawed, as July 15 falls within this range.
+\end{itemize}
+
+\textbf{Example 2:} ``Where will India's civil aviation authorities report the crash site of the Air India flight that crashed shortly after take-off from Ahmedabad to London Gatwick, when the location is officially confirmed?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Meghani Nagar
+\item \textbf{Model answer:} Vadodara (probability: 0.2)
+\item \textbf{Model's reasoning:} ``The provided question asks for the location of the crash site as reported by India's civil aviation authorities, based on official reports from the Directorate General of Civil Aviation (DGCA). Since no specific retrieved news articles are available, I must rely on general knowledge of aviation accident patterns. Flights taking off from Ahmedabad Airport typically crash in the immediate vicinity, such as near the airport or in nearby areas like Vadodara district. Historical crashes, like the 2010 Air India Express incident, were reported in locations close to the airport, often specified as the nearest locality. Given the lack of concrete information, I am guessing ``Vadodara'' as the most plausible locality, as it is the district where Ahmedabad Airport is located. However, due to the uncertainty and absence of official confirmation details, my confidence in this guess is low.''
+\item \textbf{Analysis:} The model acknowledges missing information but guesses based on geographic proximity (Vadodara district contains Ahmedabad Airport) rather than waiting for official confirmation. It applies a general pattern (crashes near airports) without evidence this applies here.
+\end{itemize}
+
+\paragraph{2. Over-reliance on General Knowledge}
+
+When articles lack specific information, the model makes educated guesses based on general knowledge, historical patterns, or analogies rather than acknowledging the answer cannot be determined from the provided context.
+
+\textbf{Example 1:} ``What will be the official name of Donna D'Errico's interactive AI voice service by mid-July 2025?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Call Donna D.
+\item \textbf{Model answer:} Donna Voice (probability: 0.1)
+\item \textbf{Model's reasoning:} ``The provided articles do not mention Donna D'Errico or her specific AI voice service, making it impossible to draw direct insights. However, patterns from the articles, such as the naming of AI voice services (e.g., Melania Trump's ``Melania: The Audiobook''), suggest that such services often incorporate the individual's name followed by descriptors like ``Voice'' or ``AI.'' Based on this analogy, I am guessing the name might be ``Donna Voice'' or something similar. This is a speculative prediction, as there's no concrete information, leading to low confidence.''
+\item \textbf{Analysis:} The model creates a naming pattern from one unrelated example (Melania Trump's service) and applies it incorrectly. It recognizes the speculation (probability 0.1) but still provides a specific answer. The actual name ``Call Donna D.'' follows a different pattern entirely.
+\end{itemize}
+
+\textbf{Example 2:} ``What name will the new Pope take upon his election on May 8, 2025?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Leo XIV
+\item \textbf{Model answer:} Pius (probability: 0.1)
+\item \textbf{Model's reasoning:} ``The provided articles do not specify the name of the next Pope or any potential candidates' chosen names. They focus on Pope Francis's health, the conclave process, and recent appointments of cardinals. Historically, new Popes select names that are traditional, often drawing from saints or biblical figures, but without specific information from the articles or external knowledge, any prediction is highly uncertain. Based on patterns from past Popes (e.g., Francis, Benedict), I am guessing ``Pius'' as a common regnal name, but this is purely speculative and not supported by the articles. Therefore, my confidence in this answer is very low.''
+\item \textbf{Analysis:} The model relies entirely on general knowledge about papal naming conventions rather than specific information. It correctly identifies high uncertainty (probability 0.1) but still provides a specific name. The reasoning conflates ``common regnal names'' with what the next Pope will actually choose.
+\end{itemize}
+
+\paragraph{3. Entity Confusion: Selecting Wrong Person/Place/Organization}
+
+When multiple entities are mentioned, the model frequently selects the most prominent or frequently mentioned one rather than the correct answer, even when both are present in the context.
+
+\textbf{Example 1:} ``Who will decide on a potential merger between the two factions of the Nationalist Congress Party by June 10, 2025?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Supriya Sule
+\item \textbf{Model answer:} Sharad Pawar (probability: 0.4)
+\item \textbf{Model's reasoning:} ``The retrieved articles do not explicitly confirm the decision-making authority for a merger between the NCP factions. However, Sharad Pawar is frequently referenced as a senior leader, founder, and key figure in his faction's activities, such as holding talks on party matters and denying merger possibilities. This suggests he may hold significant influence or be involved in such decisions. Additionally, mentions of the Election Commission's role in endorsing decisions imply that formal approvals could be required, but no specific individual is named. Based on this, I infer Sharad Pawar as the most likely person, though the uncertainty is high due to the lack of clear confirmation in the articles.''
+\item \textbf{Analysis:} The model selects the more prominent and frequently mentioned leader (Sharad Pawar) rather than the actual decision-maker (Supriya Sule). It conflates ``senior leader with influence'' with ``person who will decide,'' using prominence as a proxy for decision-making authority. The moderate confidence (0.4) suggests the model recognizes uncertainty but still favors the prominent option.
+\end{itemize}
+
+\textbf{Example 2:} ``Who will Chelsea face in the round of 16 of the 2025 FIFA Club World Cup?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Benfica
+\item \textbf{Model answer:} Bayern Munich (probability: 0.4)
+\item \textbf{Model's reasoning:} ``The provided articles detail the groups for the 2025 FIFA Club World Cup, with Group C consisting of Bayern Munich, Benfica, Boca Juniors, and Auckland City, and Group D including Chelsea, Flamengo, Esperance Sportive de Tunisie, and a replacement (possibly Los Angeles FC or Club America based on Article 1). The question specifies that the round of 16 matchup is between the runner-up of Group D and the winner of Group C. Without the actual group stage results, I must make an educated guess based on team strengths. Bayern Munich is a strong candidate for the winner of Group C, as they are the defending champions and one of the top teams. Chelsea, in Group D, could plausibly be the runner-up, given their history, but this is uncertain. The replacement team adds further uncertainty, as it could affect group dynamics.''
+\item \textbf{Analysis:} The model selects the more prominent team (Bayern Munich) from Group C rather than correctly identifying which team would actually win the group. It uses team prominence (``defending champions,'' ``top teams'') as a proxy for group stage results, ignoring that the question requires specific match outcomes that aren't in the articles.
+\end{itemize}
+
+\paragraph{4. Incorrect Pattern Matching and Inference}
+
+The model infers answers from similar but not directly relevant information, applying patterns from one context to another inappropriately.
+
+\textbf{Example 1:} ``What will be the dream main event fight pairing at the UFC card held at the White House to celebrate America's 250th birthday?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Aspinall vs. Jones
+\item \textbf{Model answer:} Jon Jones vs. Ciryl Gane (probability: 0.1)
+\item \textbf{Model's reasoning:} ``The retrieved articles do not directly reference the specific UFC event at the White House for America's 250th birthday, as they focus on unrelated events like UFC 314, UFC 285, and UFC 300. However, Dana White's discussions in Articles 2 and 5 highlight high-profile fights, particularly Jon Jones vs. Ciryl Gane, which is described as a major, sellout event. Given the lack of direct information, I am inferring that this could be a candidate for the ``dream main event'' based on White's emphasis on big fights, but this is highly speculative due to the time gap and absence of relevant details for the 2026 event. Thus, my best guess is Jon Jones vs. Ciryl Gane.''
+\item \textbf{Analysis:} The model incorrectly assumes that a high-profile fight mentioned in articles about other events (UFC 285, UFC 300) will be the main event for the White House card. It applies a pattern (``high-profile fights are main events'') without evidence that this specific fight applies to this specific event. The low confidence (0.1) acknowledges speculation but doesn't prevent the incorrect inference.
+\end{itemize}
+
+\textbf{Example 2:} ``Which economic forecasting firm will project a 9.4 percent decrease in international visitors to the United States in 2025 by July 31, 2025?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Oxford Economics
+\item \textbf{Model answer:} Tourism Economics (probability: 0.85)
+\item \textbf{Model's reasoning:} ``The retrieved passages consistently reference Tourism Economics as the firm making projections about US international travel declines due to Trump policies. In Article 4, it specifically mentions an estimated 9.4\% decline in international visitor arrivals for 2025, aligning directly with the question's criteria. Other articles from the same firm discuss similar projections, such as a 9\% decline or 5.1\% dip, indicating a pattern of their involvement in these forecasts. No other firms are mentioned in the passages as providing such specific projections. While it's possible another firm could release a matching projection by July 31, 2025, the evidence strongly favors Tourism Economics based on the provided data.''
+\item \textbf{Analysis:} The model finds a matching percentage (9.4\%) in the articles and assumes it's the answer, but fails to verify that this specific projection is what the question asks about. It conflates ``Tourism Economics projected 9.4\% decline'' with ``the firm that will project 9.4\% decline by July 31, 2025,'' ignoring that multiple firms may make similar projections. The high confidence (0.85) reflects over-reliance on surface-level pattern matching.
+\end{itemize}
+
+\paragraph{5. Selecting Most Prominent Rather Than Correct Answer}
+
+When multiple candidates are mentioned, the model frequently picks the most prominent, frequently mentioned, or first-mentioned option rather than verifying which is correct.
+
+\textbf{Example 1:} ``Which state will become the first to ban soda purchases with food stamps by August 2025?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Nebraska
+\item \textbf{Model answer:} Arkansas (probability: 0.5)
+\item \textbf{Model's reasoning:} ``The retrieved articles indicate that multiple states are actively seeking USDA approval to ban soda purchases with SNAP benefits, including Arkansas, Indiana, Idaho, Nebraska, and West Virginia. Arkansas is frequently highlighted as a leader in this effort, with Governor Sarah Huckabee Sanders announcing and receiving praise for the request, suggesting it may be prioritized. Other states like Indiana are also mentioned, but Arkansas appears to be the most advanced based on the passages. Given the Trump administration's push for these reforms and the resolution deadline of August 2025, I am considering Arkansas the most likely candidate, though uncertainty exists due to potential approvals from other states. My confidence is moderate, as the articles do not provide definitive evidence of the first approval.''
+\item \textbf{Analysis:} The model selects the state most prominently featured in articles (Arkansas) rather than the one that actually becomes first (Nebraska). It uses prominence (``frequently highlighted,'' ``leader,'' ``most advanced'') as a proxy for being first, conflating media attention with actual regulatory outcomes. The moderate confidence (0.5) suggests recognition of uncertainty but still favors the prominent option.
+\end{itemize}
+
+\textbf{Example 2:} ``Who will be the top celebrity influencer investor by social media follower count on the Candere Hurun India Women Leaders List 2025?''
+
+\begin{itemize}
+\item \textbf{Correct answer:} Shraddha Kapoor
+\item \textbf{Model answer:} Priyanka Chopra (probability: 0.3)
+\item \textbf{Model's reasoning:} ``The question asks for the top celebrity influencer investor on the Candere Hurun India Women Leaders List 2025, ranked by social media follower count. Based on the provided articles, I am considering the most relevant candidates: Priyanka Chopra is frequently highlighted as having the highest social media followers among Indian women (e.g., 91.8 million Instagram followers in Article 4), and she is a celebrity with investments in production companies and other ventures, making her a strong fit. Roshni Nadar Malhotra is noted as the first Indian woman in the global top 10 richest women (Article 1), indicating her status as an influential investor, but she likely has fewer followers compared to top celebrities. Other potential candidates like Shraddha Kapoor (91.4 million followers) are mentioned, but Priyanka Chopra appears most prominent in the articles.''
+\item \textbf{Analysis:} The model selects the celebrity with the highest follower count mentioned in articles (Priyanka Chopra with 91.8M) rather than verifying which person actually appears on the specific list. It notes Shraddha Kapoor (91.4M) but dismisses her because Priyanka is ``most prominent in the articles.'' The model conflates ``highest followers mentioned in articles'' with ``top person on the specific list,'' which may have different criteria or timing.
+\end{itemize}

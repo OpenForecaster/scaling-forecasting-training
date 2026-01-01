@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title or article.article_title }} - Article Detail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .article-content {
+            white-space: pre-line;
+            max-height: 300px;
+            overflow-y: hidden;
+            transition: max-height 0.5s ease;
+        }
+        .article-content.expanded {
+            max-height: 2000px;
+        }
+        .question-card {
+            margin-bottom: 15px;
+            border-left: 4px solid #007bff;
+        }
+        .option {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .correct-option {
+            background-color: rgba(40, 167, 69, 0.2);
+            border-left: 3px solid #28a745;
+        }
+        .answer-display {
+            padding: 10px;
+            margin-top: 10px;
+            background-color: rgba(40, 167, 69, 0.1);
+            border-left: 3px solid #28a745;
+            border-radius: 4px;
+        }
+        .background-section, .resolution-section {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: rgba(0, 123, 255, 0.05);
+            border-left: 3px solid #007bff;
+            border-radius: 4px;
+        }
+        .resolution-section {
+            background-color: rgba(255, 193, 7, 0.05);
+            border-left: 3px solid #ffc107;
+        }
+        .resolution-section ul {
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        .resolution-section li {
+            margin-bottom: 8px;
+        }
+        .resolution-section b {
+            color: #495057;
+        }
+        .answer-type-section {
+            padding: 8px;
+            margin: 8px 0;
+            background-color: rgba(108, 117, 125, 0.05);
+            border-left: 3px solid #6c757d;
+            border-radius: 4px;
+        }
+        .explanation-section {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: rgba(23, 162, 184, 0.05);
+            border-left: 3px solid #17a2b8;
+            border-radius: 4px;
+        }
+        .raw-content {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+        .metadata-section {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: rgba(108, 117, 125, 0.05);
+            border-left: 3px solid #6c757d;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4 mb-5">
+        <a href="/" class="btn btn-outline-secondary mb-3">← Back to Articles</a>
+        
+        <h1>{{ article.title or article.article_title }}</h1>
+        <p class="lead">{{ article.description or article.article_description }}</p>
+        <p>
+            <small class="text-muted">Published: {{ article.date_publish or article.article_publish_date }}</small>
+            {% if article.date_modify or article.article_modify_date %}
+            <br><small class="text-muted">Modified: {{ article.date_modify or article.article_modify_date }}</small>
+            {% endif %}
+            {% if article.date_download or article.article_download_date %}
+            <br><small class="text-muted">Downloaded: {{ article.date_download or article.article_download_date }}</small>
+            {% endif %}
+        </p>
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Article Content</h5>
+                <button class="btn btn-sm btn-outline-primary" id="toggle-content">Expand</button>
+            </div>
+            <div class="card-body">
+                <div class="article-content" id="article-content">{{ article.maintext or article.article_maintext }}</div>
+            </div>
+        </div>
+
+        <!-- Check if we have direct question fields (new format) -->
+        {% set has_direct_fields = article.question_title and article.background %}
+        
+        <h2 class="mb-3">Final Question{% if is_freeq %} (Free-form){% else %} (Multiple Choice){% endif %}</h2>
+        
+        {% if has_direct_fields %}
+            <!-- New format: Display direct fields -->
+            <div class="card question-card mb-3">
+                <div class="card-header">
+                    <span class="badge bg-primary">Direct Format</span>
+                    <span class="badge bg-info ms-2">{% if is_freeq %}Free-form{% else %}MCQ{% endif %}</span>
+                </div>
+                <div class="card-body">
+                    <h5>{{ article.question_title }}</h5>
+                    
+                    {% if article.background %}
+                    <div class="background-section">
+                        <strong>Background Information:</strong>
+                        <p class="text-muted mb-0">{{ article.background }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if article.resolution_criteria %}
+                    <div class="resolution-section">
+                        <strong>Resolution Criteria:</strong>
+                        <div class="text-muted mb-0">{{ article.resolution_criteria|safe }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if article.answer_type %}
+                    <div class="answer-type-section">
+                        <strong>Answer Type:</strong>
+                        <span class="text-muted">{{ article.answer_type }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if article.answer %}
+                    <div class="answer-display">
+                        <strong>Answer:</strong> <span class="badge bg-success">{{ article.answer }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Additional metadata for new format -->
+                    {% if article.resolution_date or article.question_start_date %}
+                    <div class="metadata-section">
+                        <strong>Question Metadata:</strong>
+                        {% if article.question_start_date %}
+                        <br><small class="text-muted">Start Date: {{ article.question_start_date }}</small>
+                        {% endif %}
+                        {% if article.resolution_date %}
+                        <br><small class="text-muted">Resolution Date: {{ article.resolution_date }}</small>
+                        {% endif %}
+                        {% if article.data_source %}
+                        <br><small class="text-muted">Data Source: {{ article.data_source }}</small>
+                        {% endif %}
+                        {% if article.news_source %}
+                        <br><small class="text-muted">News Source: {{ article.news_source }}</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+        {% elif article.final_question %}
+            <!-- Old format: Parse final_question -->
+            <div id="final-question-container" 
+                 data-questions="{{ article.final_question|e }}" 
+                 data-is-freeq="{{ is_freeq|lower }}">
+                <div id="final-question-parsed"></div>
+            </div>
+            
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                <h4 class="alert-heading">No Final Question Available</h4>
+                <p>The final question hasn't been processed yet. This could be because:</p>
+                <ul>
+                    <li>The choose_best process hasn't been run</li>
+                    <li>The leakage_check process hasn't been run</li>
+                    <li>No good question was found during processing</li>
+                    <li>The question data is in an unsupported format</li>
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Processing Details Section - Only show for old format -->
+        {% if not has_direct_fields %}
+        <div class="mt-4">
+            <h3 class="mb-3">Processing Details</h3>
+            
+            <!-- Generated Questions Toggle -->
+            {% if article.generated_questions %}
+            <div class="card mb-3">
+                    <div class="card-header">
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#generated-questions-section">
+                        Show Generated Questions
+                        </button>
+                    </div>
+                <div class="collapse" id="generated-questions-section">
+                        <div class="card-body">
+                        <div id="generated-questions-container" 
+                             data-questions="{{ article.generated_questions|e }}" 
+                             data-is-freeq="{{ is_freeq|lower }}">
+                            <div id="generated-questions-parsed"></div>
+                        </div>
+                        
+                        <!-- Raw content for generated questions -->
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#generated-raw">
+                                Show Raw Generated Questions
+                            </button>
+                            <div class="collapse mt-2" id="generated-raw">
+                            <div class="raw-content">{{ article.generated_questions }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Individual Question Validation Toggle -->
+            {% set has_individual_validation = article.q1 or article.q2 or article.q3 %}
+            {% if has_individual_validation %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#individual-validation-section">
+                        Show Individual Question Validation
+                    </button>
+                    <span class="ms-2">
+                        {% set ns = namespace(valid_count=0, total_count=0) %}
+                        {% for i in range(1, 4) %}
+                            {% if article["q" + i|string] %}
+                                {% set ns.total_count = ns.total_count + 1 %}
+                                {% if article["q" + i|string + "_valid"] == 1 %}
+                                    {% set ns.valid_count = ns.valid_count + 1 %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        <span class="badge bg-secondary">{{ ns.valid_count }}/{{ ns.total_count }} Valid</span>
+                    </span>
+                </div>
+                <div class="collapse" id="individual-validation-section">
+                    <div class="card-body">
+                        <div class="row">
+                            {% for i in range(1, 4) %}
+                                {% set q_field = "q" + i|string %}
+                                {% set q_valid_field = "q" + i|string + "_valid" %}
+                                {% set q_validation_response_field = "q" + i|string + "_validation_response" %}
+                                {% if article[q_field] %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <small><strong>Question {{ i }}</strong></small>
+                                            {% if article[q_valid_field] is defined %}
+                                                {% if article[q_valid_field] == 1 %}
+                                                    <span class="badge bg-success">✓ Valid</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">✗ Invalid</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-secondary">Unknown</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="card-body">
+                                            <!-- Show extracted question -->
+                                            <div class="mb-2">
+                                                <div id="q{{ i }}-container" 
+                                                     data-questions="{{ article[q_field]|e }}" 
+                                                     data-is-freeq="{{ is_freeq|lower }}">
+                                                    <div id="q{{ i }}-parsed"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Show validation response if available -->
+                                            {% if article[q_validation_response_field] %}
+                                            <div class="mt-2">
+                                                <button class="btn btn-sm btn-outline-secondary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#q{{ i }}-validation-raw">
+                                                    Show Validation Response
+                                                </button>
+                                                <div class="collapse mt-2" id="q{{ i }}-validation-raw">
+                                                    <div class="raw-content" style="font-size: 0.75em; max-height: 200px; overflow-y: auto;">
+                                                        {{ article[q_validation_response_field] }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        {% if ns.total_count == 0 %}
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">No Individual Questions Found</h6>
+                            <p class="mb-0">Individual questions haven't been extracted yet. This step occurs after question generation in the pipeline.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Choose Best Response Toggle -->
+            {% if article.choose_best_response %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#choose-best-section">
+                        Show Choose Best Response
+                    </button>
+                </div>
+                <div class="collapse" id="choose-best-section">
+                    <div class="card-body">
+                        <div class="raw-content">{{ article.choose_best_response }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Leakage Check Response Toggle -->
+            {% if article.leakage_check_response %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <button class="btn btn-sm btn-outline-warning" type="button" data-bs-toggle="collapse" data-bs-target="#leakage-check-section">
+                        Show Leakage Check Response
+                    </button>
+                </div>
+                <div class="collapse" id="leakage-check-section">
+                    <div class="card-body">
+                        <div class="raw-content">{{ article.leakage_check_response }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Question Validation Response -->
+            {% if article.validate_questions_response %}
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#validation-section">
+                            Show Question Validation Response
+                        </button>
+                    </div>
+                    <div>
+                        {% if article.final_question_valid is defined %}
+                            {% if article.final_question_valid == 1 %}
+                                <span class="badge bg-success">✓ Valid Question</span>
+                            {% else %}
+                                <span class="badge bg-danger">✗ Invalid Question</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-secondary">Validation Status Unknown</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="collapse" id="validation-section">
+                    <div class="card-body">
+                        {% if article.final_question_valid is defined %}
+                            <div class="alert {% if article.final_question_valid == 1 %}alert-success{% else %}alert-danger{% endif %} mb-3">
+                                <h6 class="alert-heading mb-1">
+                                    {% if article.final_question_valid == 1 %}
+                                        ✓ Question Validation: PASSED
+                                    {% else %}
+                                        ✗ Question Validation: FAILED
+                                    {% endif %}
+                                </h6>
+                                <small>
+                                    {% if article.final_question_valid == 1 %}
+                                        The final question is faithful to the article content and meets validation criteria.
+                                    {% else %}
+                                        The final question contains inaccuracies or is not properly grounded in the article content.
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% endif %}
+                        <div class="raw-content">{{ article.validate_questions_response }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Fallback message if no processing data -->
+            {% set has_any_processing_data = article.generated_questions or article.q1 or article.q2 or article.q3 or article.choose_best_response or article.leakage_check_response or article.validate_questions_response %}
+            {% if not has_any_processing_data %}
+                <div class="alert alert-warning" role="alert">
+                <h4 class="alert-heading">No Processing Data Available</h4>
+                <p>This article doesn't have any processing data yet. This could be because:</p>
+                    <ul>
+                        <li>The question generation process hasn't been run for this article</li>
+                        <li>The individual question extraction process hasn't been run</li>
+                        <li>The individual question validation process hasn't been run</li>
+                        <li>The choose_best process hasn't been run</li>
+                        <li>The leakage_check process hasn't been run</li>
+                        <li>The generation failed for this article</li>
+                    <li>The processing fields are missing or empty</li>
+                    </ul>
+                    <hr>
+                    <p class="mb-0">Try running the complete question generation pipeline for this article.</p>
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Show raw final_question data if available and we're using direct fields -->
+        {% if has_direct_fields and article.final_question %}
+        <div class="mt-4">
+            <h3 class="mb-3">Raw Data</h3>
+            <div class="card mb-3">
+                <div class="card-header">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#raw-final-question">
+                        Show Raw Final Question Data
+                    </button>
+                </div>
+                <div class="collapse" id="raw-final-question">
+                    <div class="card-body">
+                        <div class="raw-content">{{ article.final_question }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('toggle-content').addEventListener('click', function() {
+            const content = document.getElementById('article-content');
+            content.classList.toggle('expanded');
+            this.textContent = content.classList.contains('expanded') ? 'Collapse' : 'Expand';
+        });
+        
+        // Parse questions for a specific container
+        function parseQuestionsForContainer(containerIdPrefix) {
+            const questionsContainer = document.getElementById(containerIdPrefix + '-container');
+            const container = document.getElementById(containerIdPrefix + '-parsed');
+            
+            if (!questionsContainer || !container) {
+                return;
+            }
+            
+            const questionsText = questionsContainer.getAttribute('data-questions');
+            const isFreeq = questionsContainer.getAttribute('data-is-freeq') === 'true';
+            
+            if (!questionsText) {
+                return;
+            }
+            
+            try {
+                if (isFreeq) {
+                    // Parse XML format for free-form questions
+                    parseXMLQuestions(questionsText, container);
+                } else {
+                    // Parse JSON format for MCQ questions
+                    parseJSONQuestions(questionsText, container);
+                }
+            } catch (e) {
+                console.error(`Error parsing questions for ${containerIdPrefix}:`, e);
+                container.innerHTML = `<div class="alert alert-danger">Error parsing questions: ${e.message}</div>`;
+            }
+        }
+
+        // Parse all question containers
+        function parseAllQuestions() {
+            // Parse final question
+            parseQuestionsForContainer('final-question');
+            
+            // Parse generated questions
+            parseQuestionsForContainer('generated-questions');
+            
+            // Parse individual questions (q1, q2, q3)
+            for (let i = 1; i <= 3; i++) {
+                parseQuestionsForContainer(`q${i}`);
+            }
+            
+            // Note: choose-best and leakage-check responses now show raw text only
+        }
+        
+        function parseXMLQuestions(text, container) {
+            // Extract questions using regex for <q1>, <q2>, etc.
+            const questionRegex = /<q(\d+)>(.*?)<\/q\d+>/gs;
+            const matches = [...text.matchAll(questionRegex)];
+            
+            if (matches.length === 0) {
+                container.innerHTML = '<div class="alert alert-warning">No XML questions found in the expected format.</div>';
+                return;
+            }
+
+            // For each q_i, keep only the last match
+            const lastMatches = {};
+            matches.forEach((match) => {
+                const questionNumber = match[1];
+                lastMatches[questionNumber] = match;
+            });
+
+            // Sort by question number (as integer)
+            const sortedQuestionNumbers = Object.keys(lastMatches).sort((a, b) => Number(a) - Number(b));
+
+            sortedQuestionNumbers.forEach((questionNumber) => {
+                const match = lastMatches[questionNumber];
+                const questionContent = match[2];
+                // Extract individual fields
+                const questionId = extractXMLField(questionContent, 'question_id') || questionNumber;
+                const questionTitle = extractXMLField(questionContent, 'question_title') || 'Untitled Question';
+                const background = extractXMLField(questionContent, 'background') || 'No background provided';
+                const resolutionCriteria = extractXMLField(questionContent, 'resolution_criteria');
+                const answer = extractXMLField(questionContent, 'answer') || 'No answer provided';
+                const answerType = extractXMLField(questionContent, 'answer_type');
+                const explanation = extractXMLField(questionContent, 'explanation');
+                
+                // Create question card
+                const questionCard = document.createElement('div');
+                questionCard.className = 'card question-card mb-3';
+                
+                // Build the HTML content dynamically
+                let cardContent = `
+                    <div class="card-header">
+                        <span class="badge bg-primary">Question ${parseInt(questionId) + 1}</span>
+                        <span class="badge bg-info ms-2">Free-form</span>
+                    </div>
+                    <div class="card-body">
+                        <h5>${escapeHtml(questionTitle)}</h5>
+                        <div class="background-section">
+                            <strong>Background Information:</strong>
+                            <p class="text-muted mb-0">${escapeHtml(background)}</p>
+                        </div>`;
+                
+                // Only add resolution criteria section if it exists and is not empty
+                if (resolutionCriteria && resolutionCriteria.trim()) {
+                    cardContent += `
+                        <div class="resolution-section">
+                            <strong>Resolution Criteria:</strong>
+                            <div class="text-muted mb-0">${resolutionCriteria}</div>
+                        </div>`;
+                }
+                
+                // Add answer type section if it exists
+                if (answerType && answerType.trim()) {
+                    cardContent += `
+                        <div class="answer-type-section">
+                            <strong>Answer Type:</strong>
+                            <span class="text-muted">${escapeHtml(answerType)}</span>
+                        </div>`;
+                }
+                
+                cardContent += `
+                        <div class="answer-display">
+                            <strong>Answer:</strong> <span class="badge bg-success">${escapeHtml(answer)}</span>
+                        </div>`;
+                
+                // Add explanation section if it exists
+                if (explanation && explanation.trim()) {
+                    cardContent += `
+                        <div class="explanation-section">
+                            <strong>Explanation:</strong>
+                            <p class="text-muted mb-0">${escapeHtml(explanation)}</p>
+                        </div>`;
+                }
+                
+                cardContent += `
+                    </div>`;
+                
+                questionCard.innerHTML = cardContent;
+                container.appendChild(questionCard);
+            });
+        }
+        
+        function parseJSONQuestions(text, container) {
+            // Extract JSON blocks
+            const jsonBlocks = text.split('```json');
+            
+            jsonBlocks.forEach((block, index) => {
+                if (index === 0) return; // Skip text before first json block
+                
+                const jsonContent = block.split('```')[0].trim();
+                if (!jsonContent) return;
+                
+                try {
+                    const questionData = JSON.parse(jsonContent);
+                    
+                    // Create question card
+                    const questionCard = document.createElement('div');
+                    questionCard.className = 'card question-card mb-3';
+                    
+                    let optionsHtml = '';
+                    if (questionData.options && Array.isArray(questionData.options)) {
+                        optionsHtml = questionData.options.map((option, optionIndex) => `
+                            <div class="option ${optionIndex === questionData.answer ? 'correct-option' : ''}">
+                                ${optionIndex === questionData.answer ? '✓ ' : ''}${escapeHtml(option)}
+                            </div>
+                        `).join('');
+                    }
+                    
+                    questionCard.innerHTML = `
+                        <div class="card-header">
+                            <span class="badge bg-primary">Question ${parseInt(questionData.question_id || index)}</span>
+                            <span class="badge bg-warning ms-2">MCQ</span>
+                        </div>
+                        <div class="card-body">
+                            <h5>${escapeHtml(questionData.question_title || 'Untitled Question')}</h5>
+                            <div class="background-section">
+                                <strong>Background Information:</strong>
+                                <p class="text-muted mb-0">${escapeHtml(questionData.background || 'No background provided')}</p>
+                            </div>
+                            <div class="options-list mt-3">
+                                ${optionsHtml}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(questionCard);
+                } catch (e) {
+                    console.error('Error parsing JSON question:', e);
+                    const errorCard = document.createElement('div');
+                    errorCard.className = 'alert alert-danger';
+                    errorCard.innerHTML = `Error parsing question ${index}: ${e.message}`;
+                    container.appendChild(errorCard);
+                }
+            });
+        }
+        
+        function extractXMLField(content, fieldName) {
+            const regex = new RegExp(`<${fieldName}>(.*?)<\/${fieldName}>`, 's');
+            const match = content.match(regex);
+            return match ? match[1].trim() : null;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Parse all questions when page loads
+        document.addEventListener('DOMContentLoaded', parseAllQuestions);
+    </script>
+</body>
+</html>

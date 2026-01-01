@@ -1,0 +1,152 @@
+\section{Data Curation for Forecasting Question Generation}
+\label{sec:data_curation}
+
+We develop a comprehensive data curation pipeline to generate high-quality forecasting questions from news articles. Our approach transforms news content into structured forecasting tasks suitable for training and evaluating forecasting models. This section details our multi-stage pipeline, quality control mechanisms, and empirical validation of the curation process.
+
+\subsection{Pipeline Overview}
+\label{subsec:pipeline_overview}
+
+Our data curation pipeline consists of five sequential stages designed to ensure high-quality forecasting questions while maintaining scalability. The pipeline processes news articles through: (1) \textbf{Question Generation}, where we generate multiple candidate questions per article using large language models; (2) \textbf{Question Extraction}, which parses and structures individual questions from the generation output; (3) \textbf{Individual Validation}, where each question is assessed for forecasting validity and answer definiteness; (4) \textbf{Best Question Selection}, which chooses the highest-quality question from valid candidates; and (5) \textbf{Answer Leakage Detection}, which identifies and mitigates cases where the answer is inadvertently revealed in the question text.
+
+Each stage is designed with specific quality criteria and automated validation to ensure the resulting questions are suitable for forecasting evaluation. The pipeline processes articles in batches and maintains incremental progress, allowing for efficient processing of large-scale news datasets.
+
+\subsection{Question Generation Strategy}
+\label{subsec:question_generation}
+
+We employ a prompt-based approach using large language models to generate forecasting questions from news articles. Our generation strategy focuses on creating \textbf{free-form short-answer questions} that require 1-3 word responses, as these better capture the nuanced nature of real-world forecasting compared to multiple-choice formats.
+
+\subsubsection{Prompt Engineering}
+Our carefully crafted prompts instruct the model to generate questions that are: (1) \textbf{Forward-looking}, posed in future tense to maintain forecasting authenticity; (2) \textbf{Answerable from article content}, ensuring the news article contains definitive resolution information; (3) \textbf{Temporally appropriate}, with question start dates preceding article publication and resolution dates that allow definitive answers; (4) \textbf{Impact-oriented}, focusing on events with significant downstream consequences; and (5) \textbf{Well-defined}, requiring specific, unambiguous answers rather than ranges or estimates.
+
+We generate three candidate questions per article to increase the likelihood of obtaining at least one high-quality question while providing selection diversity for the subsequent filtering stages.
+
+\subsubsection{Question Structure}
+Each generated question follows a structured XML format containing: \texttt{question\_title} (the forecasting query), \texttt{background} (minimal context without answer leakage), \texttt{resolution\_criteria} (detailed conditions for answer verification), \texttt{answer} (the ground truth response), and \texttt{answer\_type} (classification of expected response format). This structure ensures consistency and enables automated processing in subsequent pipeline stages.
+
+\subsection{Multi-Stage Quality Validation}
+\label{subsec:quality_validation}
+
+\subsubsection{Individual Question Validation}
+Each generated question undergoes rigorous individual validation using a separate language model as a judge. The validation process evaluates: (1) \textbf{Temporal consistency}, ensuring the question is posed in appropriate future tense; (2) \textbf{Answer definiteness}, verifying the article provides clear, unambiguous resolution; (3) \textbf{Answer specificity}, confirming responses are concrete and well-defined (not ranges or estimates); (4) \textbf{Non-numeric constraints}, ensuring answers are categorical rather than numerical to avoid overfitting; and (5) \textbf{Uniqueness}, verifying only one correct answer exists.
+
+This validation stage serves as a critical quality gate, filtering out questions that fail to meet forecasting standards before proceeding to selection.
+
+\subsubsection{Best Question Selection}
+From the pool of individually validated questions per article, we employ an automated selection mechanism that chooses the single best question based on: (1) \textbf{Forecasting validity}, prioritizing questions with appropriate temporal horizons; (2) \textbf{Impact assessment}, favoring questions with broader relevance and significance; (3) \textbf{Answer definiteness}, selecting questions with the clearest resolution criteria; and (4) \textbf{Understandability}, ensuring questions are comprehensible without requiring specialized domain knowledge.
+
+Our analysis reveals interesting selection patterns: Question 1 is selected 39.8\% of the time (6.5\% above expected), Question 2 is selected 33.5\% of the time (0.2\% above expected), and Question 3 is selected 26.7\% of the time (6.7\% below expected). This bias toward earlier questions suggests that initial generation attempts often produce higher-quality results.
+
+\subsection{Answer Leakage Detection and Mitigation}
+\label{subsec:leakage_detection}
+
+A critical challenge in question generation is preventing \textbf{answer leakage}, where the correct answer is inadvertently revealed in the question text itself. We implement automated leakage detection by performing exact string matching between the ground truth answer and the question content (excluding answer tags). Our pipeline tracks leakage at three stages: initial generation, post-selection, and final output after editing.
+
+Our comprehensive leakage analysis reveals a three-stage improvement pattern: (1) \textbf{Generated questions} show 44.7\% leakage rate across all 149,775 questions; (2) \textbf{Chosen questions} (before editing) show 40.3\% leakage rate, indicating the selection process provides modest improvement; (3) \textbf{Final questions} (after editing) achieve 2.4\% leakage rate, demonstrating highly effective leakage removal.
+
+The leakage removal step proves remarkably effective, achieving a 37.9\% reduction from chosen to final questions and an overall 42.3\% improvement from initial generation to final output. This demonstrates that while initial generation and selection have moderate leakage rates, the editing process successfully addresses the vast majority of leakage issues.
+
+Position-dependent leakage patterns in generated questions show: Question 1 has 18,765 cases, Question 2 has 23,680 cases, and Question 3 has 24,430 cases. However, in final questions, leakage is distributed as: originally Question 1 (362 cases), Question 2 (219 cases), and Question 3 (144 cases), showing more effective leakage removal for later-position questions.
+
+\subsection{Pipeline Effectiveness and Quality Metrics}
+\label{subsec:effectiveness_metrics}
+
+Table~\ref{tab:pipeline_effectiveness} presents comprehensive statistics demonstrating the effectiveness of each pipeline stage. Our analysis is based on processing 49,925 Forbes articles from 2023, generating 149,775 total questions with perfect completion rate (100.0\%).
+
+The individual validation stage achieves a 41.5\% pass rate, filtering 62,169 questions as valid from the initial generation. The choose best selection process successfully identifies usable questions for 68.0\% of articles, resulting in 14,321 high-quality questions. After accounting for answer leakage detection, 55.3\% of questions remain leakage-free.
+
+The overall pipeline efficiency achieves a 28.7\% end-to-end success rate, converting nearly 50,000 source articles into over 14,000 usable forecasting questions. This represents a substantial improvement over manual curation approaches while maintaining quality standards through automated validation.
+
+\subsubsection{Quality Distribution Analysis}
+Our analysis reveals that 15.1\% of articles yield all three valid questions, 26.3\% yield two valid questions, 26.5\% yield one valid question, and 32.0\% yield no valid questions. This distribution indicates that while our generation approach successfully produces valid questions for the majority of articles, there is significant room for improvement in achieving multiple valid questions per article.
+
+The position-wise validation rates show improvement across question positions: Question 1 achieves 35.6\% validity, Question 2 reaches 44.2\%, and Question 3 attains 44.7\%. This trend suggests that later generation attempts benefit from accumulated context, though they also exhibit higher leakage rates.
+
+\subsection{Failure Mode Analysis and Mitigation Strategies}
+\label{subsec:failure_analysis}
+
+We identify several key failure modes in our pipeline: (1) \textbf{Complete validation failure} affects 32.0\% of articles where all generated questions fail validation criteria; (2) \textbf{Partial question failure} occurs in 52.8\% of articles where some but not all questions pass validation; (3) \textbf{High answer leakage} affects 43.5\% of articles where over half the questions contain answer leakage.
+
+These failure modes inform our mitigation strategies: improving prompt engineering to reduce validation failures, implementing more sophisticated leakage detection beyond exact string matching, and developing adaptive generation strategies that learn from validation feedback.
+
+\begin{table}[t]
+\centering
+\caption{Question Generation Pipeline Effectiveness Statistics}
+\label{tab:pipeline_effectiveness}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Pipeline Stage} & \textbf{Success Rate} & \textbf{Output} & \textbf{Quality Metric} \\
+\midrule
+1. Question Generation & 100.0\% & 149,775 questions & 100.0\% completion \\
+2. Individual Validation & 41.5\% & 62,169 valid & 41.5\% pass rate \\
+3. Best Question Selection & 68.0\% & 14,321 usable & 28.7\% usability \\
+4a. Leakage (All Questions) & 55.3\% & 82,900 clean & 55.3\% leakage-free \\
+4b. Leakage (Chosen, Before Edit) & 59.7\% & 18,110 clean & 59.7\% leakage-free \\
+4c. Leakage (Final, After Edit) & 97.6\% & 29,576 clean & 97.6\% leakage-free \\
+\midrule
+\textbf{Overall Pipeline Efficiency} & \textbf{28.7\%} & \textbf{14,321/49,925} & \textbf{End-to-end success} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Question Position Analysis} & \textbf{Validation Rate} & \textbf{Selection Rate} & \textbf{Selection Bias} \\
+\midrule
+Question 1 & 35.6\% & 39.8\% & +6.5\% \\
+Question 2 & 44.2\% & 33.5\% & +0.2\% \\
+Question 3 & 44.7\% & 26.7\% & -6.7\% \\
+\midrule
+\textbf{Expected (uniform)} & \textbf{--} & \textbf{33.3\%} & \textbf{0.0\%} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Quality Distribution} & \textbf{Articles} & \textbf{Percentage} \\
+\midrule
+3 valid questions & 7,546 & 15.1\% \\
+2 valid questions & 13,150 & 26.3\% \\
+1 valid question & 13,231 & 26.5\% \\
+0 valid questions & 15,998 & 32.0\% \\
+\midrule
+Generated questions leakage & 66,875 questions & 44.7\% \\
+Chosen questions leakage & 12,207 questions & 40.3\% \\
+Final questions leakage & 725 questions & 2.4\% \\
+Leakage removal effectiveness & 37.9\% reduction & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dataset Characteristics and Scale}
+\label{subsec:dataset_characteristics}
+
+Our curation pipeline processes large-scale news datasets from multiple sources, with primary evaluation conducted on Forbes articles spanning 2023-2024. The Forbes 2023 dataset contains 49,925 articles, providing substantial scale for training and evaluation while demonstrating the pipeline's effectiveness on real-world news content.
+
+The pipeline maintains high throughput while preserving quality, processing an average of 3.00 questions per article with perfect generation completion rates. This scalability enables the creation of large forecasting datasets suitable for training sophisticated language models while maintaining consistent quality standards through automated validation.
+
+\subsubsection{Temporal Coverage and Resolution}
+Our questions span diverse temporal horizons, with resolution dates typically ranging from weeks to months after question creation. This temporal diversity ensures models learn to forecast across different time scales, from near-term events (days to weeks) to medium-term developments (months to quarters).
+
+The temporal structure follows real-world forecasting patterns where questions are posed with specific start dates preceding article publication, and resolution criteria that align with natural event timelines described in the news content.
+
+\subsection{Quality Assurance and Validation Results}
+\label{subsec:quality_assurance}
+
+Our comprehensive quality assurance framework demonstrates both the challenges and remarkable effectiveness of automated question generation with proper editing. The 41.5\% individual validation pass rate indicates room for improvement in generation prompts, while still producing a substantial number of valid questions. Most notably, our three-stage leakage control achieves dramatic improvement: from 44.7\% leakage in generated questions to 40.3\% in chosen questions, and finally to just 2.4\% in edited final questions, representing a 37.9\% reduction through the editing process.
+
+The selection bias analysis reveals important insights about question quality patterns. The preference for Question 1 (39.8\% selection rate vs. 33.3\% expected) suggests that initial generation attempts often produce the highest-quality results, possibly due to the model's focus on the most salient aspects of the article content.
+
+\subsubsection{Validation Criteria Effectiveness}
+Our validation criteria prove effective at identifying high-quality forecasting questions. The criteria successfully filter out: (1) questions with temporal inconsistencies, (2) questions lacking definitive answers, (3) questions with ambiguous or range-based responses, and (4) questions that fail to maintain forecasting authenticity.
+
+The 28.7\% overall pipeline efficiency, while indicating substantial room for improvement, still enables the creation of large forecasting datasets from news sources while maintaining rigorous standards for question validity and answer definiteness.
+
+\subsection{Implications for Forecasting Model Training}
+\label{subsec:training_implications}
+
+The curated dataset characteristics have important implications for forecasting model training. The diversity of question types, temporal horizons, and answer formats ensures models learn robust forecasting capabilities across different domains and time scales. The rigorous quality validation and highly effective leakage removal (reducing leakage from 44.7\% to 2.4\%) helps prevent models from learning spurious patterns or exploiting answer leakage.
+
+The position-dependent quality patterns suggest that training data should potentially weight earlier questions more heavily, as they demonstrate higher selection rates and may represent more natural forecasting scenarios. The dramatic effectiveness of our leakage removal process (37.9\% reduction) demonstrates that automated editing can successfully address answer revelation issues, making the final dataset highly suitable for training without leakage concerns.
+
+Our pipeline's 28.7\% success rate in converting raw news articles to usable forecasting questions demonstrates the challenges of automated dataset creation while still providing substantial scale for forecasting research. The pipeline successfully converts nearly 50,000 news articles into over 14,000 high-quality forecasting questions, providing the scale necessary for training effective forecasting models. 
