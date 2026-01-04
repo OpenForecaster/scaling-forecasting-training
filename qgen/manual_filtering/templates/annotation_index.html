@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Annotation Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .question-card {
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .question-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .annotation-badge {
+            font-size: 1em;
+            padding: 6px 12px;
+        }
+        .stats-card {
+            margin-bottom: 20px;
+        }
+        .progress-text {
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-3">Question Annotation Tool</h1>
+        <p class="lead">Annotate questions for quality - {{ model_name }}</p>
+        
+        <!-- Statistics Summary -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <h3 class="text-primary">{{ total }}</h3>
+                        <p class="mb-0">Total Questions</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <h3 class="text-info">{{ annotated }}</h3>
+                        <p class="mb-0">Annotated</p>
+                        <small class="text-muted">{{ "%.1f"|format((annotated/total*100) if total > 0 else 0) }}%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <h3 class="text-success">{{ approved }}</h3>
+                        <p class="mb-0">Approved</p>
+                        <small class="text-muted">{{ "%.1f"|format((approved/annotated*100) if annotated > 0 else 0) }}%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <h3 class="text-danger">{{ rejected }}</h3>
+                        <p class="mb-0">Rejected</p>
+                        <small class="text-muted">{{ "%.1f"|format((rejected/annotated*100) if annotated > 0 else 0) }}%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress mb-4" style="height: 25px;">
+            <div class="progress-bar bg-success" role="progressbar" 
+                 style="width: {{ (annotated/total*100) if total > 0 else 0 }}%" 
+                 aria-valuenow="{{ annotated }}" aria-valuemin="0" aria-valuemax="{{ total }}">
+                {{ annotated }}/{{ total }} Annotated
+            </div>
+        </div>
+        
+        <!-- Filter buttons -->
+        <div class="mb-3">
+            <button class="btn btn-sm btn-outline-secondary" onclick="filterQuestions('all')">All</button>
+            <button class="btn btn-sm btn-outline-warning" onclick="filterQuestions('pending')">Pending</button>
+            <button class="btn btn-sm btn-outline-success" onclick="filterQuestions('approved')">Approved</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="filterQuestions('rejected')">Rejected</button>
+        </div>
+        
+        <!-- Questions List -->
+        <div id="questions-container">
+            {% for question in articles %}
+            <div class="card question-card" 
+                 data-filter="{{ 'approved' if question.human_filter == 1 else ('rejected' if question.human_filter == 0 else 'pending') }}"
+                 onclick="window.location.href='/annotate/{{ loop.index0 }}'">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="card-subtitle mb-2 text-muted">Question {{ loop.index }} / {{ total }}</h6>
+                            <h5 class="card-title">{{ question.question_title }}</h5>
+                            <p class="card-text text-muted mb-2">
+                                <small><strong>Answer:</strong> {{ question.answer }} ({{ question.answer_type }})</small>
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">{{ question.background[:150] }}{% if question.background|length > 150 %}...{% endif %}</small>
+                            </p>
+                        </div>
+                        <div class="ms-3">
+                            {% if question.human_filter == 1 %}
+                                <span class="badge bg-success annotation-badge">✓ YES</span>
+                            {% elif question.human_filter == 0 %}
+                                <span class="badge bg-danger annotation-badge">✗ NO</span>
+                            {% else %}
+                                <span class="badge bg-secondary annotation-badge">Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function filterQuestions(filter) {
+            const cards = document.querySelectorAll('.question-card');
+            cards.forEach(card => {
+                if (filter === 'all') {
+                    card.style.display = 'block';
+                } else {
+                    const cardFilter = card.getAttribute('data-filter');
+                    card.style.display = cardFilter === filter ? 'block' : 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+

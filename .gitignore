@@ -1,0 +1,170 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Logs and databases
+*.log
+
+# Virtual environments (for local use)
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Conda environments (if created in your project folder)
+conda-meta/
+
+# IDE and editor files
+*.sublime-project
+*.sublime-workspace
+.vscode/
+.idea/
+*.iml
+
+# news
+news-please/
+
+# API Keys - Guardian
+data/theguardian/apikey.py
+data/theguardian/apikey.txt
+data/theguardian/guardian_key.py
+data/theguardian/guardian_key.txt
+
+# API Keys - OpenRouter
+openrouter_evals/openrouter_key.py
+openrouter_evals/openrouter_key.txt
+qgen/openrouter_key.py
+qgen/openrouter_key.txt
+**/openrouter_key.py
+**/openrouter_key.txt
+
+# API Keys - Metaculus
+metaculus_token.txt
+metaculus_token.py
+**/metaculus_token.txt
+**/metaculus_token.py
+
+# API Keys - WandB
+wandb_key.py
+wandb_key.txt
+**/wandb_key.py
+**/wandb_key.txt
+wandb_apikey.py
+wandb_apikey.txt
+
+# API Keys - Tinker
+tinkerstuff/key*.txt
+tinkerstuff/key*.py
+tinkerstuff/**/key*.txt
+tinkerstuff/**/key*.py
+tinkerstuff/tinker_key.py
+tinkerstuff/tinker_key.txt
+**/tinker_key.py
+**/tinker_key.txt
+
+# API Keys - HuggingFace
+hf_token.txt
+hf_token.py
+**/hf_token.txt
+**/hf_token.py
+huggingface_token.txt
+huggingface_token.py
+
+# API Keys - OpenAI
+openai_key.py
+openai_key.txt
+**/openai_key.py
+**/openai_key.txt
+
+# Generic API key files (catch-all)
+**/apikey.py
+**/apikey.txt
+**/api_key.py
+**/api_key.txt
+**/*_apikey.py
+**/*_apikey.txt
+**/*_api_key.py
+**/*_api_key.txt
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# macOS generated files
+.DS_Store
+._.DS_Store
+
+# logs
+wandb/
+eval_logs/
+eval_results/
+
+# data related files
+data/infinitegames/
+data/futurex_predictions.jsonl
+data/metaculus/data/
+
+# raw output files
+raw_outputs/
+debug/
+plots/
+evals/
+practice/
+RL_Forecasting/
+stats/
+notebooks/
+misc/
+trainingTRL/
+trygptoss/
+
+# tinker 
+tinkerstuff/

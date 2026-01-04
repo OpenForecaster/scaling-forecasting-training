@@ -1,0 +1,54 @@
+# Model arguments
+model_name_or_path: Qwen/Qwen2.5-7B-Instruct # deepseek-ai/DeepSeek-R1-Distill-Llama-8B # Qwen/Qwen2.5-7B-Instruct # deepseek-ai/DeepSeek-R1-Distill-Qwen-7B # Qwen/Qwen2.5-7B-Instruct # deepseek-ai/DeepSeek-R1-Distill-Llama-8B # Qwen/Qwen2.5-7B-Instruct # Qwen/Qwen2.5-7B-Instruct # deepseek-ai/DeepSeek-R1-Distill-Qwen-7B #   Qwen/Qwen2.5-7B-Instruct #  deepseek-ai/DeepSeek-R1-Distill-Llama-8B ##  deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+model_revision: main
+torch_dtype: bfloat16
+attn_implementation: flash_attention_2
+bf16: true
+tf32: true
+output_dir: /fast/nchandak/forecasting/training/Qwen-2.5-7B-Instruct-LOG-Curated-Halawi #R1-Distill-Llama-8B-LOG-Curated-Halawi # Qwen-2.5-7B-Instruct-LOG-Curated-Halawi # Qwen2.5-7B-Instruct-Raw-DataMix # R1-Distill-Qwen-7B-Raw-Halawi # DataMix # Qwen-2.5-7B-Instruct-Brier-DataMix # /fast/nchandak/forecasting/training/DeepSeek-R1-Distill-Llama-8B-Brier-Raw # Qwen-2.5-7B-Instruct-LOG-Raw-102 # /fast/nchandak/forecasting/training/DeepSeek-R1-Distill-Llama-8B-Brier-256 # R1-Distill-Llama-8B-Brier #runs/qwen-2.5-3b-r1-countdown # Llama-3.1-8B-MATH-IDK #
+
+# Dataset arguments
+dataset_id_or_path: YuehHanChen/forecasting
+dataset_splits: train  # Must match the training split used
+
+# Lora Arguments
+# No LoRA is used here
+
+# Training arguments
+# max_steps: 500
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 256 # 256 # 32
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+learning_rate: 1.0e-5 # 1.0e-6 as in the deepseek math paper 5-e7 from https://hijkzzz.notion.site/unraveling-rlhf-and-its-variants-engineering-insights#147d9a33ecc9806090f3d5c749d31f05
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+# GRPO specific parameters
+beta: 0.1 # 0.04 as in the deepseek math paper 0.001 from https://hijkzzz.notion.site/unraveling-rlhf-and-its-variants-engineering-insights#147d9a33ecc9806090f3d5c749d31f05
+max_prompt_length: 1024
+max_completion_length: 3072 # 3584 # 3072 # 3584 # 2048
+num_generations: 7
+use_vllm: true
+# vllm_device: "cuda:7"
+vllm_gpu_memory_utilization: 0.7
+num_train_epochs: 15
+temperature: 1.0
+
+# Logging arguments
+logging_strategy: steps
+logging_steps: 2
+log_completions: True
+save_strategy: "steps"
+save_steps: 250 # 100
+seed: 42
+report_to:
+- wandb
+
+# Eval arguments 
+eval_strategy: "steps"
+eval_steps: 10
+per_device_eval_batch_size: 1
+# eval_on_start: True 
+# do_eval: true 
+# batch_eval_metrics: true 

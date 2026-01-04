@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Visualizer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .article-card {
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .article-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .pagination {
+            margin-top: 20px;
+            justify-content: center;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .article-metadata {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .data-source-badge {
+            font-size: 0.75em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">Article Visualizer</h1>
+        <p class="lead">Analyze generated questions from news articles{% if is_freeq %} (Free-form Questions){% else %} (Multiple Choice Questions){% endif %}</p>
+        
+        <div id="articles-container" class="row"></div>
+        <div id="loading" class="loading">Loading articles...</div>
+        
+        <nav aria-label="Page navigation">
+            <ul class="pagination" id="pagination"></ul>
+        </nav>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        const perPage = 10;
+        let totalArticles = 0;
+        
+        // Helper function to get the correct field value (supports both old and new formats)
+        function getFieldValue(article, oldField, newField, defaultValue = '') {
+            return article[newField] || article[oldField] || defaultValue;
+        }
+        
+        // Helper function to format date consistently
+        function formatDate(dateString) {
+            if (!dateString) return 'Invalid Date';
+            try {
+                // Handle different date formats
+                const date = new Date(dateString);
+                return date.toLocaleDateString();
+            } catch (e) {
+                return 'Invalid Date';
+            }
+        }
+        
+        // Helper function to determine data source
+        function getDataSourceInfo(article) {
+            const dataSource = article.data_source || 'unknown';
+            const newsSource = article.news_source || article.source || '';
+            
+            if (dataSource === 'news_generated' && newsSource) {
+                return {
+                    badge: `${newsSource.toUpperCase()}`,
+                    class: 'bg-primary'
+                };
+            } else if (dataSource) {
+                return {
+                    badge: dataSource.replace('_', ' ').toUpperCase(),
+                    class: 'bg-secondary'
+                };
+            } else {
+                return {
+                    badge: 'LEGACY',
+                    class: 'bg-info'
+                };
+            }
+        }
+        
+        function loadArticles(page) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('articles-container').innerHTML = '';
+            
+            fetch(`/api/articles?page=${page}&per_page=${perPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    totalArticles = data.total;
+                    
+                    const container = document.getElementById('articles-container');
+                    data.articles.forEach((article, index) => {
+                        const articleId = page * perPage + index;
+                        
+                        // Get field values with fallbacks
+                        const title = getFieldValue(article, 'title', 'article_title', 'Untitled');
+                        const description = getFieldValue(article, 'description', 'article_description', 'No description available');
+                        const publishDate = getFieldValue(article, 'date_publish', 'article_publish_date');
+                        const questionTitle = article.question_title || '';
+                        
+                        // Get data source info
+                        const sourceInfo = getDataSourceInfo(article);
+                        
+                        const card = document.createElement('div');
+                        card.className = 'col-md-6';
+                        
+                        // Build metadata line
+                        let metadataHtml = `<small class="text-muted">Published: ${formatDate(publishDate)}</small>`;
+                        
+                        // Add question info if available
+                        if (questionTitle) {
+                            metadataHtml += `<br><small class="text-muted"><strong>Question:</strong> ${questionTitle.substring(0, 100)}${questionTitle.length > 100 ? '...' : ''}</small>`;
+                        }
+                        
+                        // Add resolution date if available
+                        if (article.resolution_date) {
+                            metadataHtml += `<br><small class="text-muted"><strong>Resolution:</strong> ${formatDate(article.resolution_date)}</small>`;
+                        }
+                        
+                        card.innerHTML = `
+                            <div class="card article-card" onclick="window.location.href='/article/${articleId}'">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">${title}</h5>
+                                        <span class="badge ${sourceInfo.class} data-source-badge">${sourceInfo.badge}</span>
+                                    </div>
+                                    <p class="card-text">${description.substring(0, 150)}${description.length > 150 ? '...' : ''}</p>
+                                    <div class="article-metadata">
+                                        ${metadataHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                    
+                    updatePagination(page, Math.ceil(totalArticles / perPage));
+                })
+                .catch(error => {
+                    console.error('Error loading articles:', error);
+                    document.getElementById('loading').innerHTML = 'Error loading articles. Please try again.';
+                });
+        }
+        
+        function updatePagination(currentPage, totalPages) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            // Previous button
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="#" onclick="if(${currentPage} > 0) loadArticles(${currentPage - 1})">Previous</a>`;
+            pagination.appendChild(prevLi);
+            
+            // Page numbers
+            const startPage = Math.max(0, currentPage - 2);
+            const endPage = Math.min(totalPages - 1, currentPage + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageLi = document.createElement('li');
+                pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                pageLi.innerHTML = `<a class="page-link" href="#" onclick="loadArticles(${i})">${i + 1}</a>`;
+                pagination.appendChild(pageLi);
+            }
+            
+            // Next button
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="#" onclick="if(${currentPage} < ${totalPages - 1}) loadArticles(${currentPage + 1})">Next</a>`;
+            pagination.appendChild(nextLi);
+        }
+        
+        // Load initial page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadArticles(currentPage);
+        });
+    </script>
+</body>
+</html>

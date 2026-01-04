@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annotate Question {{ question_id + 1 }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .article-content {
+            white-space: pre-line;
+            max-height: 300px;
+            overflow-y: hidden;
+            transition: max-height 0.5s ease;
+        }
+        .article-content.expanded {
+            max-height: none;
+        }
+        .question-section {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        .background-section {
+            background-color: rgba(0, 123, 255, 0.05);
+            border-left: 4px solid #007bff;
+        }
+        .resolution-section {
+            background-color: rgba(255, 193, 7, 0.05);
+            border-left: 4px solid #ffc107;
+        }
+        .resolution-section ul {
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        .resolution-section li {
+            margin-bottom: 8px;
+        }
+        .answer-section {
+            background-color: rgba(40, 167, 69, 0.05);
+            border-left: 4px solid #28a745;
+        }
+        .annotation-buttons {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .annotation-buttons .btn {
+            font-size: 1.2em;
+            padding: 15px 30px;
+            min-width: 150px;
+        }
+        .current-annotation {
+            font-size: 1.1em;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .keyboard-hint {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        .navigation-buttons {
+            margin-top: 15px;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="toast-container">
+        <div id="saveToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Annotation saved successfully!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+        <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Error saving annotation. Please try again.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid mt-4 mb-5">
+        <div class="row">
+            <!-- Main Content (Left Side) -->
+            <div class="col-lg-8">
+                <a href="/" class="btn btn-outline-secondary mb-3">← Back to List</a>
+                
+                <h6 class="text-muted">Question {{ question_id + 1 }} of {{ total }}</h6>
+                <h2 class="mb-4">{{ question.question_title }}</h2>
+                
+                <!-- Background -->
+                <div class="question-section background-section">
+                    <h5>Background Information</h5>
+                    <p class="mb-0">{{ question.background }}</p>
+                </div>
+                
+                <!-- Resolution Criteria -->
+                <div class="question-section resolution-section">
+                    <h5>Resolution Criteria</h5>
+                    <div>{{ question.resolution_criteria|safe }}</div>
+                </div>
+                
+                <!-- Answer -->
+                <div class="question-section answer-section">
+                    <h5>Answer</h5>
+                    <p class="mb-1"><strong>{{ question.answer }}</strong></p>
+                    <small class="text-muted">Type: {{ question.answer_type }}</small>
+                </div>
+                
+                <!-- Article Content (Collapsible) -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Article Content</h5>
+                        <button class="btn btn-sm btn-outline-primary" id="toggle-content">Expand</button>
+                    </div>
+                    <div class="card-body">
+                        <h6>{{ question.article_title }}</h6>
+                        <p class="text-muted"><small>{{ question.article_description }}</small></p>
+                        <p class="text-muted"><small>Published: {{ question.article_publish_date }}</small></p>
+                        {% if question.url %}
+                        <p><small><a href="{{ question.url }}" target="_blank">Source Article →</a></small></p>
+                        {% endif %}
+                        <hr>
+                        <div class="article-content" id="article-content">{{ question.article_maintext }}</div>
+                    </div>
+                </div>
+                
+                <!-- Metadata -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Metadata</h6>
+                    </div>
+                    <div class="card-body">
+                        <small>
+                            <strong>QID:</strong> {{ question.qid }}<br>
+                            <strong>Data Source:</strong> {{ question.data_source }}<br>
+                            <strong>News Source:</strong> {{ question.news_source }}<br>
+                            {% if question.resolution_date %}
+                            <strong>Resolution Date:</strong> {{ question.resolution_date }}<br>
+                            {% endif %}
+                            {% if question.question_start_date %}
+                            <strong>Question Start Date:</strong> {{ question.question_start_date }}<br>
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Annotation Panel (Right Side) -->
+            <div class="col-lg-4">
+                <div class="annotation-buttons">
+                    <h4 class="mb-3">Annotate Question</h4>
+                    
+                    <!-- Current Status -->
+                    <div class="current-annotation text-center {% if question.human_filter == 1 %}bg-success text-white{% elif question.human_filter == 0 %}bg-danger text-white{% else %}bg-light{% endif %}">
+                        <strong>Current Status:</strong>
+                        {% if question.human_filter == 1 %}
+                            ✓ APPROVED
+                        {% elif question.human_filter == 0 %}
+                            ✗ REJECTED
+                        {% else %}
+                            Pending
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Annotation Buttons -->
+                    <div class="d-grid gap-3">
+                        <button class="btn btn-success btn-lg" id="btn-yes" onclick="saveAnnotation(1)">
+                            ✓ YES - Good Question
+                        </button>
+                        <button class="btn btn-danger btn-lg" id="btn-no" onclick="saveAnnotation(0)">
+                            ✗ NO - Bad Question
+                        </button>
+                    </div>
+                    
+                    <div class="keyboard-hint text-center">
+                        <small>Keyboard shortcuts: Y (yes) or N (no)</small>
+                    </div>
+                    
+                    <!-- Navigation -->
+                    <div class="navigation-buttons">
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            {% if question_id > 0 %}
+                            <a href="/annotate/{{ question_id - 1 }}" class="btn btn-outline-secondary">
+                                ← Previous
+                            </a>
+                            {% else %}
+                            <button class="btn btn-outline-secondary" disabled>← Previous</button>
+                            {% endif %}
+                            
+                            {% if question_id < total - 1 %}
+                            <a href="/annotate/{{ question_id + 1 }}" class="btn btn-outline-secondary" id="next-btn">
+                                Next →
+                            </a>
+                            {% else %}
+                            <button class="btn btn-outline-secondary" disabled>Next →</button>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid mt-2">
+                            <a href="/" class="btn btn-outline-primary">Back to List</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle article content
+        document.getElementById('toggle-content').addEventListener('click', function() {
+            const content = document.getElementById('article-content');
+            content.classList.toggle('expanded');
+            this.textContent = content.classList.contains('expanded') ? 'Collapse' : 'Expand';
+        });
+        
+        // Save annotation
+        function saveAnnotation(value) {
+            fetch('/api/annotate/{{ question_id }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ annotation: value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success toast
+                    const toast = new bootstrap.Toast(document.getElementById('saveToast'));
+                    toast.show();
+                    
+                    // Update current status display
+                    const statusDiv = document.querySelector('.current-annotation');
+                    if (value === 1) {
+                        statusDiv.className = 'current-annotation text-center bg-success text-white';
+                        statusDiv.innerHTML = '<strong>Current Status:</strong> ✓ APPROVED';
+                    } else {
+                        statusDiv.className = 'current-annotation text-center bg-danger text-white';
+                        statusDiv.innerHTML = '<strong>Current Status:</strong> ✗ REJECTED';
+                    }
+                    
+                    // Auto-advance after a short delay
+                    {% if question_id < total - 1 %}
+                    setTimeout(() => {
+                        window.location.href = '/annotate/{{ question_id + 1 }}';
+                    }, 800);
+                    {% endif %}
+                } else {
+                    // Show error toast
+                    const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                    toast.show();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                toast.show();
+            });
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return; // Don't trigger shortcuts when typing
+            }
+            
+            if (event.key.toLowerCase() === 'y') {
+                saveAnnotation(1);
+            } else if (event.key.toLowerCase() === 'n') {
+                saveAnnotation(0);
+            } else if (event.key === 'ArrowLeft' && {{ question_id }} > 0) {
+                window.location.href = '/annotate/{{ question_id - 1 }}';
+            } else if (event.key === 'ArrowRight' && {{ question_id }} < {{ total - 1 }}) {
+                window.location.href = '/annotate/{{ question_id + 1 }}';
+            }
+        });
+    </script>
+</body>
+</html>
+
