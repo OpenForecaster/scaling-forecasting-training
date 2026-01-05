@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: launch_qgen_job.sh <article_path> <output_dir> [additional_args...]
-# Example: launch_qgen_job.sh articles.jsonl ./outputs --cutoff_date 2025-05-01
+# Example: launch_qgen_job.sh articles.jsonl ./outputs --first_date 2025-01-01
 
 # Initialize conda if available, otherwise skip
 if command -v conda &> /dev/null; then

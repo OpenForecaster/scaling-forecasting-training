@@ -39,7 +39,7 @@ python run_pipeline.py \
     --creator_model deepseek/deepseek-chat-v3-0324 \
     --selector_model meta-llama/llama-4-maverick \
     --num_q_per_article 3 \
-    --cutoff_date 2025-05-01 \
+    --first_date 2025-01-01 \
     --explicit_filter \
     --seed 42
 ```
@@ -50,7 +50,7 @@ python run_pipeline.py \
 2. Converts to standardized format
 3. Extracts and updates resolution/start dates
 4. Filters by date and answer type
-5. If cutoff date provided, only keeps those questions whose resolution date is after the cutoff date.
+5. If first date provided, only keeps those questions whose resolution date is on or after the first date.
 
 **Output:** `{name}_final_questions.jsonl` with all intermediate files saved.
 
@@ -70,7 +70,7 @@ python run_pipeline.py \
 
 ### Optional
 - `--num_q_per_article N` - Questions per article (default: 1)
-- `--cutoff_date YYYY-MM-DD` - Filter questions after this date
+- `--first_date YYYY-MM-DD` - Filter questions on or after this date
 - `--explicit_filter` - Apply strict answer type filtering
 - `--seed N` - Random seed for reproducible IDs
 - `--batch_size N` - Batch size (default: 1000)
@@ -87,7 +87,7 @@ python jobs/jobs_qgen.py \
     --output_dir /path/to/output \
     --job_memory 64 \
     --job_gpus 1 \
-    --additional_args "--cutoff_date 2025-05-01 --seed 42"
+    --additional_args "--first_date 2025-01-01 --seed 42"
 ```
 
 ---
@@ -172,7 +172,7 @@ python scripts/filter_articles_cli.py \
 1. **Use the pipeline** - `run_pipeline.py` handles everything automatically
 2. **Intermediate files saved** - Inspect them if something goes wrong
 3. **Reproducible IDs** - Use `--seed 42`
-4. **Optional date filtering** - Omit `--cutoff_date` to keep all questions
+4. **Optional date filtering** - Omit `--first_date` to keep all questions
 5. **HTCondor for scale** - Use job submission for large datasets
 
 ---

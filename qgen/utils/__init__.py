@@ -42,7 +42,7 @@ from .id_utils import (
 # Filtering utilities
 from .filtering_utils import (
     is_valid_date_format,
-    is_date_after_cutoff,
+    is_date_on_or_after_first_date,
     has_valid_answer_type,
     filter_entries,
     is_valid_news_entry
@@ -79,7 +79,7 @@ __all__ = [
     
     # Filtering utilities
     'is_valid_date_format',
-    'is_date_after_cutoff',
+    'is_date_on_or_after_first_date',
     'has_valid_answer_type',
     'filter_entries',
     'is_valid_news_entry',

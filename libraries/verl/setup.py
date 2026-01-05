@@ -26,7 +26,7 @@ with open(os.path.join(version_folder, "verl/version/version")) as f:
 install_requires = [
     "accelerate",
     "codetiming",
-    "datasets",
+    "datasets>=4.0.0",
     "dill",
     "hydra-core",
     "numpy<2.0.0",

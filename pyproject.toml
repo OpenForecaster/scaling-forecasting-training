@@ -27,7 +27,7 @@ dependencies = [
     "compressed-tensors",
     "contourpy",
     "cycler",
-    "datasets",
+    "datasets>=4.0.0",
     "deepspeed",
     "depyf",
     "dill",

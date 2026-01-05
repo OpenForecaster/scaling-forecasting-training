@@ -23,7 +23,7 @@ Usage:
         --article_path articles.jsonl \\
         --output_dir /path/to/output \\
         --use_openrouter --creator_model deepseek/deepseek-chat-v3-0324 --selector_model meta-llama/llama-4-maverick \\
-        --cutoff_date 2025-05-01 \\
+        --first_date 2025-01-01 \\
         --seed 42
 """
 
@@ -276,7 +276,7 @@ def filter_questions(dated_file, output_dir, args):
     # Second filter: Apply date cutoff and answer type filters
     result = filter_entries(
         entries_with_valid_dates,
-        cutoff_date=args.cutoff_date if hasattr(args, 'cutoff_date') else None,
+        first_date=args.first_date if hasattr(args, 'first_date') else None,
         explicit_answer_filter=args.explicit_filter if hasattr(args, 'explicit_filter') else False
     )
     
@@ -285,9 +285,9 @@ def filter_questions(dated_file, output_dir, args):
     
     # Log statistics
     logger.info(f"Total entries: {stats['total']}")
-    if args.cutoff_date:
+    if args.first_date:
         logger.info(f"Valid dates (YYYY-MM-DD): {stats['valid_date']}")
-        logger.info(f"After cutoff ({args.cutoff_date}): {stats['valid_date_cutoff']}")
+        logger.info(f"On or after first date ({args.first_date}): {stats['valid_date_cutoff']}")
     logger.info(f"Valid answer types: {stats['valid_answer_type']}")
     logger.info(f"Final filtered: {stats['filtered']}")
     
@@ -426,9 +426,9 @@ def main():
     
     # Filtering parameters
     parser.add_argument(
-        "--cutoff_date",
+        "--first_date",
         default=None,
-        help="Cutoff date for filtering (YYYY-MM-DD). If provided, only keeps questions with resolution_date after this"
+        help="First date for filtering (YYYY-MM-DD). If provided, only keeps questions with resolution_date on or after this"
     )
     parser.add_argument(
         "--explicit_filter",
