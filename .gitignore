@@ -165,6 +165,8 @@ notebooks/
 misc/
 trainingTRL/
 trygptoss/
+sample_output/
+sample_out/
 
 # tinker 
 tinkerstuff/
