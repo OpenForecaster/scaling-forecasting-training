@@ -3,6 +3,16 @@ Evaluation script for Paleka's CCFLMF (Consistency Checks for Language Model For
 Evaluates models on forecasting consistency checks from dpaleka/ccflmf dataset.
 Tests whether models maintain consistent predictions across related questions.
 Uses vLLM for efficient inference.
+
+Usage:
+    # Load from HuggingFace (default)
+    python eval_paleka.py --model_dir=/path/to/model
+    
+    # Load from local files
+    python eval_paleka.py --model_dir=/path/to/model --use_local --data_dir=/path/to/tuples_2028
+    
+    # Specify different config
+    python eval_paleka.py --model_dir=/path/to/model --config_name=tuples_2026
 """
 
 import re
@@ -12,6 +22,7 @@ import pandas as pd
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from datasets import Dataset
+from huggingface_hub import hf_hub_download
 from typing import Optional, List, Tuple, Dict, Any
 from accelerate import Accelerator
 from transformers import AutoTokenizer
@@ -92,6 +103,86 @@ Your final answer should be the probability that the event asked will resolve to
 
     return prompt
 
+
+
+def load_paleka_dataset_from_hf(config_name: str = "tuples_2028") -> Dict[str, List[dict]]:
+    """
+    Load the Paleka CCFLMF dataset from HuggingFace by downloading JSONL files directly.
+    
+    Args:
+        config_name: Configuration name (e.g., "tuples_2028", "tuples_scraped", "tuples_newsapi")
+        
+    Returns:
+        Dictionary mapping checker names to list of question data
+    """
+    # Mapping of config names to HuggingFace file paths
+    CONFIG_TO_PATH = {
+        "tuples_2028": "src/data/tuples/2028",
+        "tuples_scraped": "src/data/tuples/scraped",
+        "tuples_newsapi": "src/data/tuples/newsapi",
+    }
+    
+    # All checker types
+    CHECKER_TYPES = [
+        "Neg", "And", "Or", "AndOr", "But", 
+        "Cond", "CondCond", "Consequence", 
+        "Paraphrase", "ExpectedEvidence"
+    ]
+    
+    if config_name not in CONFIG_TO_PATH:
+        logger.error(f"Unknown config: {config_name}. Available: {list(CONFIG_TO_PATH.keys())}")
+        return None
+    
+    base_path = CONFIG_TO_PATH[config_name]
+    logger.info(f"Loading dataset from HuggingFace: dpaleka/ccflmf, config: {config_name}")
+    
+    checker_data = {}
+    
+    try:
+        for checker_type in CHECKER_TYPES:
+            filename = f"{base_path}/{checker_type}Checker.jsonl"
+            
+            try:
+                # Download the file from HuggingFace
+                local_path = hf_hub_download(
+                    repo_id="dpaleka/ccflmf",
+                    filename=filename,
+                    repo_type="dataset"
+                )
+                
+                # Parse the JSONL file
+                questions_data = []
+                with open(local_path, 'r', encoding='utf-8') as f:
+                    for line_idx, line in enumerate(f):
+                        if line.strip():
+                            try:
+                                data = json.loads(line.strip())
+                                question_entry = {
+                                    'idx': line_idx,
+                                    'original_data': data,
+                                    'checker_type': checker_type
+                                }
+                                questions_data.append(question_entry)
+                            except json.JSONDecodeError as e:
+                                logger.warning(f"Failed to parse line {line_idx} in {filename}: {e}")
+                                continue
+                
+                checker_data[checker_type] = questions_data
+                logger.info(f"Loaded {len(questions_data)} questions for {checker_type}Checker")
+                
+            except Exception as e:
+                logger.warning(f"Failed to download {filename}: {e}")
+                continue
+        
+        if not checker_data:
+            logger.error("No checker data loaded from HuggingFace")
+            return None
+            
+        return checker_data
+        
+    except Exception as e:
+        logger.error(f"Failed to load dataset from HuggingFace: {e}")
+        return None
 
 
 def load_paleka_questions_from_jsonl(file_path: str) -> List[dict]:
@@ -212,7 +303,13 @@ def evaluate_paleka_questions(
     # Process each question's original data structure
     for question_entry in questions_data:
         original_data = question_entry['original_data']
-        file_path = question_entry['file_path']
+        # Support both local file loading (file_path) and HF loading (checker_type)
+        if 'file_path' in question_entry:
+            source_name = question_entry['file_path']
+        else:
+            # For HF-loaded data, construct filename from checker_type
+            checker_type = question_entry.get('checker_type', 'Unknown')
+            source_name = f"{checker_type}Checker.jsonl"
         
         # Process each component in the original data
         for component_key, component_data in original_data.items():
@@ -245,7 +342,7 @@ def evaluate_paleka_questions(
                         'question_entry_idx': question_entry['idx'],
                         'component_key': component_key,
                         'question_title': question_title,
-                        'file_path': file_path,
+                        'source_name': source_name,
                         'original_data_idx': questions_data.index(question_entry)
                     })
     
@@ -281,7 +378,7 @@ def evaluate_paleka_questions(
         question_entry_idx = metadata['question_entry_idx']
         component_key = metadata['component_key']
         question_title = metadata['question_title']
-        file_path = metadata['file_path']
+        source_name = metadata['source_name']
         original_data_idx = metadata['original_data_idx']
         
         # Extract probability from the first generation
@@ -301,7 +398,7 @@ def evaluate_paleka_questions(
         if original_data_idx not in results_by_question:
             results_by_question[original_data_idx] = {
                 "line": {},
-                "original_file": os.path.basename(file_path),
+                "original_file": os.path.basename(source_name),
                 "idx": question_entry_idx
             }
         
@@ -325,63 +422,114 @@ def evaluate_paleka_questions(
     logger.info(f"Extraction success rate: {extraction_success / len(all_outputs) * 100:.2f}%")
     return all_results
 
-def process_paleka_directory(
-    data_dir: str,
+def process_paleka_dataset(
+    data_source: str,
     model_name: str,
     model: LLM,
     tokenizer: AutoTokenizer,
     output_dir: str,
     max_new_tokens: int = 8192,
     num_generations: int = 1,
+    use_hf: bool = True,
+    config_name: str = "tuples_2028",
+    fallback_data_dir: str = None,
 ):
     """
-    Process all JSONL files in a directory
+    Process Paleka dataset either from HuggingFace or local directory
+    
+    Args:
+        data_source: Either HF config name or local directory path
+        use_hf: If True, load from HuggingFace; otherwise load from local directory
+        fallback_data_dir: Local directory to use if HF loading fails
     """
-    # Find all JSONL files in the directory
-    jsonl_files = glob.glob(os.path.join(data_dir, "*.jsonl"))
+    if use_hf:
+        # Try loading from HuggingFace
+        checker_data = load_paleka_dataset_from_hf(config_name)
+        
+        if checker_data is None:
+            logger.warning("Failed to load from HuggingFace, falling back to local files")
+            use_hf = False
+            # Use fallback directory
+            if fallback_data_dir:
+                data_source = fallback_data_dir
+                logger.info(f"Using fallback directory: {data_source}")
+        else:
+            # Process each checker type
+            for checker_name, questions_data in checker_data.items():
+                logger.info(f"Processing {checker_name}Checker with {len(questions_data)} questions")
+                
+                # Generate forecasts
+                results = evaluate_paleka_questions(
+                    model_name=model_name,
+                    model=model,
+                    tokenizer=tokenizer,
+                    questions_data=questions_data,
+                    max_new_tokens=max_new_tokens,
+                    num_generations=num_generations,
+                )
+                
+                # Create output directory
+                model_output_dir = os.path.join(output_dir, model_name)
+                os.makedirs(model_output_dir, exist_ok=True)
+                
+                # Create output filename
+                output_filename = f"{checker_name}Checker.jsonl"
+                output_path = os.path.join(model_output_dir, output_filename)
+                
+                # Save results
+                with open(output_path, 'w') as f:
+                    for result in results:
+                        output_line = {"line": result["line"]}
+                        f.write(json.dumps(output_line) + '\n')
+                
+                logger.info(f"Saved {len(results)} results to {output_path}")
     
-    if not jsonl_files:
-        logger.error(f"No JSONL files found in {data_dir}")
-        return
-    
-    logger.info(f"Found {len(jsonl_files)} JSONL files to process")
-    
-    for jsonl_file in jsonl_files:
-        logger.info(f"Processing file: {jsonl_file}")
+    if not use_hf:
+        # Load from local directory
+        data_dir = data_source
+        jsonl_files = glob.glob(os.path.join(data_dir, "*.jsonl"))
         
-        # Load questions from this file
-        questions_data = load_paleka_questions_from_jsonl(jsonl_file)
+        if not jsonl_files:
+            logger.error(f"No JSONL files found in {data_dir}")
+            return
         
-        if not questions_data:
-            logger.warning(f"No questions found in {jsonl_file}")
-            continue
+        logger.info(f"Found {len(jsonl_files)} JSONL files to process")
         
-        # Generate forecasts
-        results = evaluate_paleka_questions(
-            model_name=model_name,
-            model=model,
-            tokenizer=tokenizer,
-            questions_data=questions_data,
-            max_new_tokens=max_new_tokens,
-            num_generations=num_generations,
-        )
-        
-        # Create a subdirectory for the model name
-        model_output_dir = os.path.join(output_dir, model_name)
-        os.makedirs(model_output_dir, exist_ok=True)
-
-        # Create output filename (do not include model name in filename)
-        input_filename = os.path.basename(jsonl_file)
-        output_path = os.path.join(model_output_dir, input_filename)
-        
-        # Save results
-        with open(output_path, 'w') as f:
-            for result in results:
-                # Only write the line part in the required format
-                output_line = {"line": result["line"]}
-                f.write(json.dumps(output_line) + '\n')
-        
-        logger.info(f"Saved {len(results)} results to {output_path}")
+        for jsonl_file in jsonl_files:
+            logger.info(f"Processing file: {jsonl_file}")
+            
+            # Load questions from this file
+            questions_data = load_paleka_questions_from_jsonl(jsonl_file)
+            
+            if not questions_data:
+                logger.warning(f"No questions found in {jsonl_file}")
+                continue
+            
+            # Generate forecasts
+            results = evaluate_paleka_questions(
+                model_name=model_name,
+                model=model,
+                tokenizer=tokenizer,
+                questions_data=questions_data,
+                max_new_tokens=max_new_tokens,
+                num_generations=num_generations,
+            )
+            
+            # Create output directory
+            model_output_dir = os.path.join(output_dir, model_name)
+            os.makedirs(model_output_dir, exist_ok=True)
+            
+            # Create output filename
+            input_filename = os.path.basename(jsonl_file)
+            output_path = os.path.join(model_output_dir, input_filename)
+            
+            # Save results
+            with open(output_path, 'w') as f:
+                for result in results:
+                    output_line = {"line": result["line"]}
+                    f.write(json.dumps(output_line) + '\n')
+            
+            logger.info(f"Saved {len(results)} results to {output_path}")
 
 if __name__ == "__main__":
     import argparse
@@ -399,7 +547,13 @@ if __name__ == "__main__":
     
     parser.add_argument('--data_dir', type=str, 
                        default="/fast/nchandak/forecasting/datasets/paleka/tuples_2028",
-                       help="Directory containing Paleka JSONL files")
+                       help="Directory containing Paleka JSONL files (used if --use_local is set)")
+    
+    parser.add_argument('--use_local', action='store_true',
+                       help="Use local JSONL files instead of HuggingFace dataset")
+    
+    parser.add_argument('--config_name', type=str, default="tuples_2028",
+                       help="HuggingFace dataset config name (e.g., tuples_2028)")
     
     parser.add_argument('--num_generations', type=int, default=1, 
                        help="Number of generations to use per prompt")
@@ -419,22 +573,32 @@ if __name__ == "__main__":
         model_name = args.model_dir.rstrip("/").split("/")[-1]
     
     logger.info(f"Model name: {model_name}")
-    logger.info(f"Data directory: {args.data_dir}")
+    
+    if args.use_local:
+        logger.info(f"Using local data directory: {args.data_dir}")
+        data_source = args.data_dir
+    else:
+        logger.info(f"Using HuggingFace dataset: dpaleka/ccflmf, config: {args.config_name}")
+        data_source = args.config_name
+    
     logger.info(f"Number of generations: {args.num_generations}")
     logger.info(f"Max new tokens: {args.max_new_tokens}")
     
     # Load model
     model, tokenizer = load_model_and_tokenizer(args.model_dir, model_name)
     
-    # Process all files in the directory
-    process_paleka_directory(
-        data_dir=args.data_dir,
+    # Process dataset
+    process_paleka_dataset(
+        data_source=data_source,
         model_name=model_name,
         model=model,
         tokenizer=tokenizer,
         output_dir=args.base_save_dir,
         max_new_tokens=args.max_new_tokens,
         num_generations=args.num_generations,
+        use_hf=not args.use_local,
+        config_name=args.config_name,
+        fallback_data_dir=args.data_dir,
     )
     
     logger.info("Processing complete!")
