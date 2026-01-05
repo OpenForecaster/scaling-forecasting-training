@@ -14,7 +14,6 @@ Requirements: `uv` (pre-installed).
 ```bash
 # Clone repository
 git clone [REPOSITORY_URL]
-cd forecasting-rl
 
 # Automated setup (recommended)
 ./setup.sh
