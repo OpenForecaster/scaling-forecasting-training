@@ -10,17 +10,16 @@ This directory contains a refactored training launcher that makes it easy to con
 
 ## Usage
 
-### Basic Usage
 
-Run training with all default parameters:
+### How to run with custom params 
 
+Please first go through this whole README to understand the args some of which may be specific to your setup/config so provide those accordingly (like num gpus, model path, etc.).
+
+### Command Preview
+To see exactly what command will be executed:
 ```bash
-./launch_training.py
-# or
-./run_training.sh
+./launch_training.py --dry_run
 ```
-
-### Customizing Parameters
 
 Override any parameter via command-line arguments:
 
@@ -34,12 +33,35 @@ Override any parameter via command-line arguments:
 
 ### Common Configuration Options
 
+#### Hardware Configuration
+```bash
+--num_gpus 8                         # Number of GPUs per node
+--nnodes 1                           # Number of nodes
+--taskset_cpus "0-31"                # CPU cores to use
+```
+
 #### Model Configuration
 ```bash
 --model_name "Qwen3-8B"              # Model name
 --model_path "/path/to/model"        # Custom model path
---reward_model_path "/path/to/rm"    # Reward model path
+--reward_model_path "/path/to/rm"    # LLM-as-a-judge path (for checking model response)
 ```
+
+#### Data Configuration
+```bash
+--train_files "/path/to/train.jsonl" # Training data
+--val_files "/path/to/val.jsonl"     # Validation data
+--train_batch_size 256               # Training batch size
+--val_batch_size 512                 # Validation batch size
+```
+
+#### Experiment Tracking
+```bash
+--project_name "my-project"          # Project name for logging
+--experiment_name "my-experiment"    # Experiment name (auto-generated if not provided)
+--logger "console,wandb"             # Loggers to use
+```
+
 
 #### Training Hyperparameters
 ```bash
@@ -54,28 +76,6 @@ Override any parameter via command-line arguments:
 ```bash
 --max_prompt_length 4096             # Maximum prompt length
 --max_response_length 4096           # Maximum response length
-```
-
-#### Data Configuration
-```bash
---train_files "/path/to/train.jsonl" # Training data
---val_files "/path/to/val.jsonl"     # Validation data
---train_batch_size 256               # Training batch size
---val_batch_size 512                 # Validation batch size
-```
-
-#### Hardware Configuration
-```bash
---num_gpus 8                         # Number of GPUs per node
---nnodes 1                           # Number of nodes
---taskset_cpus "0-31"                # CPU cores to use
-```
-
-#### Experiment Tracking
-```bash
---project_name "my-project"          # Project name for logging
---experiment_name "my-experiment"    # Experiment name (auto-generated if not provided)
---logger "console,wandb"             # Loggers to use
 ```
 
 ### View All Options
@@ -104,7 +104,7 @@ Preview the command without executing it:
     --train_batch_size 128
 ```
 
-### Example 2: Production Training with Custom Settings
+### Example 2: Training with Custom Settings
 ```bash
 ./launch_training.py \
     --model_name "Qwen3-8B" \
@@ -112,30 +112,10 @@ Preview the command without executing it:
     --kl_coeff 0.01 \
     --max_response_length 8192 \
     --total_epochs 10 \
-    --project_name "production-rl" \
-    --experiment_name "qwen3-8b-high-quality"
+    --project_name "forecasting-rl" \
+    --experiment_name "qwen3-8b-openforesight"
 ```
 
-### Example 3: Using Custom Data
-```bash
-./launch_training.py \
-    --train_files "/path/to/my/train_data.jsonl" \
-    --val_files "/path/to/my/val_data.jsonl" \
-    --max_prompt_length 2048 \
-    --max_response_length 2048
-```
-
-### Example 4: Memory Efficient Configuration
-```bash
-./launch_training.py \
-    --model_name "Qwen3-4B" \
-    --max_prompt_length 2048 \
-    --max_response_length 2048 \
-    --train_batch_size 128 \
-    --ppo_mini_batch_size 128 \
-    --gpu_memory_utilization 0.4 \
-    --num_gpus 4
-```
 
 ### Example 5: Ablation Study
 ```bash
@@ -151,59 +131,3 @@ The launcher automatically sets up the following environment variables:
 - CUDA configuration (CUDA_LAUNCH_BLOCKING, TORCH_USE_CUDA_DSA, etc.)
 - Ray configuration (RAY_DEDUP_LOGS, RAY_IGNORE_UNHANDLED_ERRORS, etc.)
 - VLLM configuration (VLLM_ATTENTION_BACKEND)
-
-These are configured for optimal training performance and don't need to be set manually.
-
-## Migration from Old Shell Script
-
-If you were using the old `shuffled_8b.sh` script, simply replace:
-
-```bash
-# Old way
-./shuffled_8b.sh
-```
-
-with:
-
-```bash
-# New way (with same defaults)
-./launch_training.py
-```
-
-To customize parameters that were previously hardcoded in the shell script, use command-line arguments:
-
-```bash
-# Old: Edit variables in shell script
-# New: Pass as arguments
-./launch_training.py --lr 1e-5 --kl_coeff 0.01
-```
-
-## Advantages of the New Launcher
-
-1. **No Script Editing**: Configure everything via command-line arguments
-2. **Better Documentation**: All options documented with `--help`
-3. **Type Safety**: Proper type validation for all parameters
-4. **Reusability**: Easy to create multiple configurations without copying scripts
-5. **Version Control**: Configuration is command history, not script modifications
-6. **Scriptable**: Easy to integrate into automation pipelines
-
-## Troubleshooting
-
-### Command Preview
-To see exactly what command will be executed:
-```bash
-./launch_training.py --dry_run
-```
-
-### Verify Environment
-The launcher prints environment setup confirmation and a configuration summary before starting training.
-
-### Custom Paths
-If you need to use different paths than the defaults, specify them explicitly:
-```bash
-./launch_training.py \
-    --model_path "/your/custom/path/to/model" \
-    --train_files "/your/custom/data.jsonl" \
-    --default_local_dir "/your/custom/checkpoint/dir"
-```
-
