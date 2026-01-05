@@ -36,8 +36,9 @@ python run_pipeline.py \
     --article_path /path/to/articles.jsonl \
     --output_dir /path/to/output \
     --use_openrouter \
-    --openrouter_model deepseek/deepseek-chat-v3-0324 \
-    --num_q 3 \
+    --creator_model deepseek/deepseek-chat-v3-0324 \
+    --selector_model meta-llama/llama-4-maverick \
+    --num_q_per_article 3 \
     --cutoff_date 2025-05-01 \
     --explicit_filter \
     --seed 42
@@ -63,11 +64,12 @@ python run_pipeline.py \
 
 ### Model Configuration
 - `--use_openrouter` - Use OpenRouter API
-- `--openrouter_model` - Model name (default: deepseek/deepseek-chat-v3-0324)
+- `--creator_model` - Model for generation (default: deepseek/deepseek-chat-v3-0324)
+- `--selector_model` - Model for validation/selection (default: meta-llama/llama-4-maverick)
 - `--model_path` - Local model for VLLM (if not using OpenRouter)
 
 ### Optional
-- `--num_q N` - Questions per article (default: 1)
+- `--num_q_per_article N` - Questions per article (default: 1)
 - `--cutoff_date YYYY-MM-DD` - Filter questions after this date
 - `--explicit_filter` - Apply strict answer type filtering
 - `--seed N` - Random seed for reproducible IDs
@@ -98,7 +100,7 @@ python scripts/generate_questions.py \
     --article_path articles.jsonl \
     --output_path questions.jsonl \
     --use_openrouter \
-    --num_q 3
+    --num_q_per_article 3
 ```
 
 ### Process Dates

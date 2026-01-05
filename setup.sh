@@ -18,8 +18,12 @@ else
 fi
 
 # Create virtual environment
-echo "📦 Creating virtual environment..."
-uv venv forecast
+if [ ! -d "forecast" ]; then
+    echo "📦 Creating virtual environment..."
+    uv venv forecast
+else
+    echo "📦 Virtual environment 'forecast' already exists."
+fi
 
 # Activate the environment
 echo "🔧 Activating virtual environment..."
@@ -29,9 +33,13 @@ source forecast/bin/activate
 echo "🔥 Installing PyTorch with CUDA 12.1..."
 uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 
+# Install build dependencies to support --no-build-isolation
+echo "🛠️ Installing build dependencies..."
+uv pip install hatchling setuptools wheel packaging ninja editables
+
 # Install all project dependencies
 echo "📚 Installing project dependencies..."
-uv pip install -e .
+uv pip install -e . --no-build-isolation
 
 # Install VeRL library if it exists
 if [ -d "libraries/verl" ]; then
@@ -39,6 +47,28 @@ if [ -d "libraries/verl" ]; then
     cd libraries/verl
     uv pip install -e .
     cd ../..
+fi
+
+
+# Configure OpenRouter API Key
+KEY_FILE="qgen/config/openrouter_key.py"
+if [ ! -f "$KEY_FILE" ]; then
+    echo ""
+    echo "🔑 OpenRouter API Key Configuration"
+    echo "This project requires an OpenRouter API key for generating questions."
+    read -p "Do you want to enter your OpenRouter API key now? (y/N) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        read -p "Enter your API Key: " API_KEY
+        echo "API_KEY = \"$API_KEY\"" > "$KEY_FILE"
+        echo "✅ Key saved to $KEY_FILE"
+    else
+        echo "API_KEY = \"\"" > "$KEY_FILE"
+        echo "⚠️  Created placeholder file at $KEY_FILE"
+        echo "Please edit this file and add your actual API Key before running the pipeline."
+    fi
+else
+    echo "✅ OpenRouter key configuration found at $KEY_FILE"
 fi
 
 echo "✅ Setup complete! Your environment is ready."

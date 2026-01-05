@@ -1,5 +1,5 @@
 [project]
-name = "forecasting-rl"
+name = "scaling-forecasting-training"
 version = "0.1.0"
 description = "Forecasting Reinforcement Learning Project"
 requires-python = ">=3.9"
@@ -162,7 +162,7 @@ dependencies = [
     "uvicorn",
     "uvloop",
     "virtualenv",
-    "vllm",
+    "vllm>=0.6.0",
     "wandb",
     "watchfiles",
     "websockets",
@@ -179,4 +179,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv]
-dev-dependencies = [] 
+dev-dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "custom_eval_scripts",
+    "embeddding_retrieval",
+    "local_judge",
+    "news",
+    "openrouter_evals",
+    "plotting",
+    "qgen",
+    "trainingTRL",
+] 

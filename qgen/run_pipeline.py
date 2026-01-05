@@ -22,7 +22,7 @@ Usage:
     python run_pipeline.py \\
         --article_path articles.jsonl \\
         --output_dir /path/to/output \\
-        --use_openrouter --openrouter_model deepseek/deepseek-chat-v3-0324 \\
+        --use_openrouter --creator_model deepseek/deepseek-chat-v3-0324 --selector_model meta-llama/llama-4-maverick \\
         --cutoff_date 2025-05-01 \\
         --seed 42
 """
@@ -84,7 +84,7 @@ def run_question_generation(args, output_dir):
         generate_script,
         "--article_path", args.article_path,
         "--output_path", str(generated_file),
-        "--num_q", str(args.num_q),
+        "--num_q_per_article", str(args.num_q_per_article),
         "--max_tokens", str(args.max_tokens),
         "--temperature", str(args.temperature),
         "--batch_size", str(args.batch_size)
@@ -99,7 +99,11 @@ def run_question_generation(args, output_dir):
     
     # Add model configuration
     if args.use_openrouter:
-        cmd.extend(["--use_openrouter", "--openrouter_model", args.openrouter_model])
+        cmd.extend([
+            "--use_openrouter", 
+            "--creator_model", args.creator_model,
+            "--selector_model", args.selector_model
+        ])
     else:
         if not args.model_path:
             raise ValueError("--model_path required when not using OpenRouter")
@@ -365,14 +369,19 @@ def main():
         help="Use OpenRouter for inference"
     )
     parser.add_argument(
-        "--openrouter_model",
+        "--creator_model",
         default="deepseek/deepseek-chat-v3-0324",
-        help="OpenRouter model to use (default: deepseek/deepseek-chat-v3-0324)"
+        help="Model to use for question generation (creator) (default: deepseek/deepseek-chat-v3-0324)"
+    )
+    parser.add_argument(
+        "--selector_model",
+        default="meta-llama/llama-4-maverick",
+        help="Model to use for selection/validation (selector) (default: meta-llama/llama-4-maverick)"
     )
     
     # Generation parameters
     parser.add_argument(
-        "--num_q",
+        "--num_q_per_article",
         type=int,
         default=1,
         help="Number of questions to generate per article (default: 1)"

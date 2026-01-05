@@ -36,8 +36,9 @@ python qgen/run_pipeline.py \
     --article_path qgen/sample_data/telegraph20.jsonl \
     --output_dir ./output \
     --use_openrouter \
-    --openrouter_model deepseek/deepseek-v3.2 \
-    --num_q 3 \
+    --creator_model deepseek/deepseek-v3.2 \
+    --selector_model meta-llama/llama-4-maverick \
+    --num_q_per_article 3 \
     --cutoff_date 2025-05-01
 ```
 

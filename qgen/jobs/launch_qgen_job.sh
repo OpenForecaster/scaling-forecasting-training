@@ -21,7 +21,7 @@ cd /home/nchandak/forecasting/qgen
 python3 run_pipeline.py \
     --article_path "$1" \
     --output_dir "$2" \
-    --num_q 3 \
+    --num_q_per_article 3 \
     --use_openrouter \
     ${@:3}
 
