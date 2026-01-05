@@ -21,21 +21,12 @@ python load_foresight.py --split train --output_dir data/
 python load_foresight.py --split train --subsample 1000 --output_dir data/
 ```
 
-### Prepare Custom Questions
-
-```bash
-# From JSONL questions file
-python prepare_custom_dataset.py \
-    --questions_file /path/to/questions.jsonl \
-    --output_dir data/ \
-    --split train
-
-# With subsampling
-python prepare_custom_dataset.py \
-    --questions_file /path/to/questions.jsonl \
-    --subsample 500 \
-    --output_dir data/
-```
-
 **Output:** Parquet files ready for VeRL training in `data/` directory.
 
+**For Training**:
+
+Go to the following folder and check the readme there. 
+```bash
+cd libraries/verl/scripts/ours/testrun/
+cat README.md
+```

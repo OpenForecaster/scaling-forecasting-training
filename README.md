@@ -72,19 +72,10 @@ python load_foresight.py --split train --output_dir data/
 python load_foresight.py --split train --subsample 1000 --output_dir data/
 ```
 
-**Prepare Custom Dataset**:
-WHICH DATA?!
-```bash
-python prepare_custom_dataset.py \
-    --questions_file /path/to/questions.jsonl \
-    --output_dir data/ \
-    --subsample 500
-```
-
 **Launch Training**:
 ```bash
-cd libraries/verl
-bash scripts/ours/trygpt/launch_script.sh
+cd libraries/verl/scripts/ours/testrun/
+cat README.md
 ```
 
 **Note**: VERL may have dependency conflicts so it might be required to create a separate environment for training.
@@ -146,15 +137,6 @@ python local_judge/llm_judge.py \
 
 ## Additional Components
 
-### Data Collection (`data/`)
-
-Scrapers for prediction markets and news sources.
-
-- **Metaculus**: `metaculus/metaculus_new.py` - Fetch questions from API
-- **Manifold Markets**: `manifold_new.py` - Process data dumps
-- **FutureX**: `futureX.py` - Download FutureX benchmark questions from HuggingFace
-- **The Guardian**: `theguardian/guardian_fetcher_3months.py` - Fetch news articles in last 3 months.
-
 ### News Collection (`news/`)
 
 Extract and process news articles from Common Crawl (27M+ articles, 150+ domains, 150GB+).
@@ -193,6 +175,3 @@ python embeddding_retrieval/main_new.py \
 
 Evaluate commercial models (GPT-4, Claude, Gemini) via OpenRouter API.
 
-- `freeform_evals.py` - Free-form evaluation
-- `binary_evals.py` - Binary question evaluation
-- `retrieval_evals.py` - RAG-augmented evaluation

@@ -21,6 +21,7 @@ python eval_openforesight.py --model_dir=/path/to/model --data_split=test
 # OpenForesight (without retrieval)
 python eval_openforesight.py --model_dir=/path/to/model --data_split=test --without_retrieval
 ```
+You can evaluate the response using LLM-as-a-judge setup by going to the `/local_judge` subdirectory and check the README there. 
 
 ## Common Arguments
 

@@ -21,16 +21,15 @@ python llm_judge.py \
 - `--input_dir` - Path to directory containing files (default: `/fast/nchandak/forecasting/evals/freeform/manual/theguardian_207/`)
 - `--output_dir` - Output directory (defaults to input location)
 
-### Scoring Options
-- `--continuous` - Use continuous scoring (0-1 range) instead of binary
+### Optional Scoring Options
 - `--logprobs` - Store normalized probabilities
 - `--no_ground_truth` - Judge without ground truth (knowledge-based)
 
-### Generation Parameters
+### Optional Generation Parameters
 - `--max_tokens` - Max tokens to generate (default: 2048)
 - `--gen_kwargs` - Custom generation params (e.g., `"temperature=0.7,top_p=0.9"`)
 - `--thinking` - Use thinking mode parameters
-- `--batch_size` - Batch size for processing (default: 32)
+- `--batch_size` - Batch size for processing 
 
 ## Input Format
 
