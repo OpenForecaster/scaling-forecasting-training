@@ -14,7 +14,6 @@ Requirements: `uv` (pre-installed).
 ```bash
 # Clone repository
 git clone [REPOSITORY_URL]
-cd forecasting-rl
 
 # Automated setup (recommended)
 ./setup.sh
@@ -37,9 +36,10 @@ python qgen/run_pipeline.py \
     --article_path qgen/sample_data/telegraph20.jsonl \
     --output_dir ./output \
     --use_openrouter \
-    --openrouter_model deepseek/deepseek-v3.2 \
-    --num_q 3 \
-    --cutoff_date 2025-05-01
+    --creator_model deepseek/deepseek-v3.2 \
+    --selector_model meta-llama/llama-4-maverick \
+    --num_q_per_article 3 \
+    --first_date 2025-01-01
 ```
 
 **What it does**: Generates free-form questions, extracts resolution dates, filters by date and answer type, removes temporal leakage.
@@ -73,6 +73,7 @@ python load_foresight.py --split train --subsample 1000 --output_dir data/
 ```
 
 **Prepare Custom Dataset**:
+WHICH DATA?!
 ```bash
 python prepare_custom_dataset.py \
     --questions_file /path/to/questions.jsonl \

@@ -61,11 +61,17 @@ async def main():
         help="Use OpenRouter for inference"
     )
     parser.add_argument(
-        "--openrouter_model", 
+        "--creator_model", 
         type=str, 
         default="deepseek/deepseek-chat-v3-0324",
         # default="deepseek/deepseek-v3.2",
-        help="OpenRouter model to use"
+        help="Model to use for question generation (creator)"
+    )
+    parser.add_argument(
+        "--selector_model",
+        type=str,
+        default="meta-llama/llama-4-maverick",
+        help="Model to use for validation, leakage checking, and choosing best questions (selector)"
     )
     
     # Processing flags
@@ -92,7 +98,7 @@ async def main():
     
     # Generation parameters
     parser.add_argument(
-        "--num_q", 
+        "--num_q_per_article", 
         type=int, 
         default=1,
         help="Number of questions to generate per article"
@@ -146,17 +152,17 @@ async def main():
     # Initialize inference engines
     if args.use_openrouter:
         inference_engine = OpenRouterInference(
-            model=args.openrouter_model,
+            model=args.creator_model,
             max_tokens=args.max_tokens,
             temperature=args.temperature
         )
         leakage_engine = OpenRouterInference(
-            model="meta-llama/llama-4-maverick",
+            model=args.selector_model,
             max_tokens=args.max_tokens,
             temperature=0.6
         )
         choose_engine = OpenRouterInference(
-            model="meta-llama/llama-4-maverick",
+            model=args.selector_model,
             max_tokens=args.max_tokens,
             temperature=0.6
         )
@@ -180,7 +186,7 @@ async def main():
         leakage_engine=leakage_engine,
         choose_engine=choose_engine,
         choose_best=args.choose_best,
-        num_questions=args.num_q,
+        num_questions=args.num_q_per_article,
         validate_questions=args.validate
     )
     

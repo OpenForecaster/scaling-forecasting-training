@@ -37,21 +37,21 @@ def is_valid_date_format(date_str: str) -> bool:
         return False
 
 
-def is_date_after_cutoff(date_str: str, cutoff_date: str) -> bool:
+def is_date_on_or_after_first_date(date_str: str, first_date: str) -> bool:
     """
-    Check if date is after the cutoff date.
+    Check if date is on or after the first date.
     
     Args:
         date_str: Date string in YYYY-MM-DD format
-        cutoff_date: Cutoff date in YYYY-MM-DD format
+        first_date: First date in YYYY-MM-DD format
         
     Returns:
-        True if date is after cutoff, False otherwise
+        True if date is on or after first_date, False otherwise
     """
     try:
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-        cutoff_obj = datetime.strptime(cutoff_date, '%Y-%m-%d')
-        return date_obj > cutoff_obj
+        first_obj = datetime.strptime(first_date, '%Y-%m-%d')
+        return date_obj >= first_obj
     except ValueError:
         return False
 
@@ -111,7 +111,7 @@ def has_valid_answer_type(answer_type: str, explicit_filter: bool = False) -> bo
 
 def filter_entries(
     entries: List[Dict[str, Any]],
-    cutoff_date: Optional[str] = None,
+    first_date: Optional[str] = None,
     explicit_answer_filter: bool = False,
     date_field: str = 'resolution_date',
     answer_type_field: str = 'answer_type'
@@ -121,7 +121,7 @@ def filter_entries(
     
     Args:
         entries: List of entry dictionaries to filter
-        cutoff_date: Optional cutoff date (YYYY-MM-DD). If provided, filters by date
+        first_date: Optional first date (YYYY-MM-DD). If provided, filters by date
         explicit_answer_filter: If True, applies strict answer type filtering
         date_field: Name of the date field to check (default: 'resolution_date')
         answer_type_field: Name of the answer type field (default: 'answer_type')
@@ -143,8 +143,8 @@ def filter_entries(
     }
     
     for entry in entries:
-        # Only filter by date if cutoff_date is provided
-        if cutoff_date:
+        # Only filter by date if first_date is provided
+        if first_date:
             resolution_date = entry.get(date_field, '')
             
             # Skip if no resolution date or invalid format
@@ -153,8 +153,8 @@ def filter_entries(
             
             stats['valid_date'] += 1
             
-            # Skip if date is not after cutoff
-            if not is_date_after_cutoff(resolution_date, cutoff_date):
+            # Skip if date is not after first_date
+            if not is_date_on_or_after_first_date(resolution_date, first_date):
                 continue
             
             stats['valid_date_cutoff'] += 1

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: launch_qgen_job.sh <article_path> <output_dir> [additional_args...]
-# Example: launch_qgen_job.sh articles.jsonl ./outputs --cutoff_date 2025-05-01
+# Example: launch_qgen_job.sh articles.jsonl ./outputs --first_date 2025-01-01
 
 # Initialize conda if available, otherwise skip
 if command -v conda &> /dev/null; then
@@ -21,7 +21,7 @@ cd /home/nchandak/forecasting/qgen
 python3 run_pipeline.py \
     --article_path "$1" \
     --output_dir "$2" \
-    --num_q 3 \
+    --num_q_per_article 3 \
     --use_openrouter \
     ${@:3}
 
