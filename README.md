@@ -5,7 +5,7 @@
 Codebase for generating open-ended forecasting questions from news articles (used to develop [OpenForesight](https://huggingface.co/datasets/nikhilchandak/OpenForesight)), scraping data from prediction markets, and RL training of language models on forecasting questions to develop models like [OpenForecaster-8B](https://huggingface.co/nikhilchandak/OpenForecaster-8B). 
 
 **Paper**: [Scaling Open-Ended Reasoning To Predict the Future](https://arxiv.org/abs/2512.25070)  
-**Website**: [openforecaster.github.io](https://openforecaster.github.io) 
+**Blog**: [openforecaster.github.io](https://openforecaster.github.io) 
 
 ## Installation
 
@@ -190,3 +190,14 @@ python openrouter_evals/freeform_evals.py \
     --base_save_dir ./results
 ```
 
+```
+@misc{chandak2026scalingopenendedreasoningpredict,
+      title={Scaling Open-Ended Reasoning to Predict the Future}, 
+      author={Nikhil Chandak and Shashwat Goel and Ameya Prabhu and Moritz Hardt and Jonas Geiping},
+      year={2026},
+      eprint={2512.25070},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2512.25070}, 
+}
+```
