@@ -72,7 +72,7 @@ python load_foresight.py --split train --output_dir data/
 python load_foresight.py --split train --subsample 1000 --output_dir data/
 ```
 
-**Launch Training**:
+**Experiment with Training**:
 ```bash
 cd libraries/verl/scripts/ours/testrun/
 cat README.md
