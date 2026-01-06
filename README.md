@@ -7,6 +7,18 @@ Codebase for generating open-ended forecasting questions from news articles (use
 **Paper**: [Scaling Open-Ended Reasoning To Predict the Future](https://arxiv.org/abs/2512.25070)  
 **Blog**: [openforecaster.github.io](https://openforecaster.github.io) 
 
+```
+@misc{chandak2026scalingopenendedreasoningpredict,
+      title={Scaling Open-Ended Reasoning to Predict the Future}, 
+      author={Nikhil Chandak and Shashwat Goel and Ameya Prabhu and Moritz Hardt and Jonas Geiping},
+      year={2026},
+      eprint={2512.25070},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2512.25070}, 
+}
+```
+
 ## Installation
 
 Requirements: `uv` (pre-installed).
@@ -188,16 +200,4 @@ python openrouter_evals/freeform_evals.py \
     --models openai/gpt-5 \
     --num_generations 1 \
     --base_save_dir ./results
-```
-
-```
-@misc{chandak2026scalingopenendedreasoningpredict,
-      title={Scaling Open-Ended Reasoning to Predict the Future}, 
-      author={Nikhil Chandak and Shashwat Goel and Ameya Prabhu and Moritz Hardt and Jonas Geiping},
-      year={2026},
-      eprint={2512.25070},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2512.25070}, 
-}
 ```
