@@ -11,7 +11,7 @@ Main Components:
 - EmbeddingRetrievalPipeline: Main orchestrator
 
 Example Usage:
-    from embeddding_retrieval import Config, EmbeddingRetrievalPipeline
+    from embedding_retrieval import Config, EmbeddingRetrievalPipeline
     
     # Create configuration
     config = Config(base_data_dir='/path/to/data')

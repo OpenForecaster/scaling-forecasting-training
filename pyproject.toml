@@ -184,7 +184,7 @@ dev-dependencies = []
 [tool.hatch.build.targets.wheel]
 packages = [
     "custom_eval_scripts",
-    "embeddding_retrieval",
+    "embedding_retrieval",
     "local_judge",
     "news",
     "openrouter_evals",

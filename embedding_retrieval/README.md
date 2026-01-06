@@ -35,7 +35,7 @@ DATA_DIR/
 ### Basic Usage
 
 ```python
-from embeddding_retrieval import Config, EmbeddingRetrievalPipeline
+from embedding_retrieval import Config, EmbeddingRetrievalPipeline
 
 # Create configuration (uses default paths)
 config = Config()
@@ -48,7 +48,7 @@ pipeline.run()
 ### Custom Configuration
 
 ```python
-from embeddding_retrieval import Config, EmbeddingRetrievalPipeline
+from embedding_retrieval import Config, EmbeddingRetrievalPipeline
 
 # Custom data directory
 config = Config(base_data_dir='/path/to/your/data')
@@ -195,7 +195,7 @@ Main orchestrator that coordinates all components:
 
 ### Custom Processing
 ```python
-from embeddding_retrieval import EmbeddingRetrievalPipeline, Config
+from embedding_retrieval import EmbeddingRetrievalPipeline, Config
 
 class CustomPipeline(EmbeddingRetrievalPipeline):
     def run(self, **kwargs):
@@ -257,7 +257,7 @@ The new system maintains compatibility with the original data formats. To migrat
 
 1. Update your scripts to use the new imports:
    ```python
-   from embeddding_retrieval import EmbeddingRetrievalPipeline, Config
+   from embedding_retrieval import EmbeddingRetrievalPipeline, Config
    ```
 
 2. Replace hardcoded paths with configuration:

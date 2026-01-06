@@ -86,28 +86,22 @@ Evaluate models locally using VLLM on various forecasting benchmarks.
 
 **Freeform Questions**:
 ```bash
-python custom_eval_scripts/eval_freeform.py \
+python custom_eval_scripts/eval_freeform_retrieval.py \
     --model_dir /path/to/model \
     --questions_file questions.jsonl \
     --base_save_dir ./results \
-    --num_generations 3
+    --num_generations 3 \
+    --num_articles 0  # Set to >0 for retrieval
 ```
 
 **Binary Questions**:
 ```bash
-python custom_eval_scripts/eval_binary.py \
+python custom_eval_scripts/eval_binary_retrieval.py \
     --model_dir /path/to/model \
     --questions_file questions.jsonl \
     --base_save_dir ./results \
-    --num_generations 5
-```
-
-**With Retrieval**:
-```bash
-python custom_eval_scripts/eval_retrieval.py \
-    --model_dir /path/to/model \
-    --questions_file questions_with_docs.jsonl \
-    --base_save_dir ./results
+    --num_generations 5 \
+    --num_articles 5  # Example with retrieval
 ```
 
 **Supported Benchmarks**: Metaculus, Manifold, FutureBench, FutureX, MMLU-Pro, MATH, SimpleQA
@@ -122,6 +116,14 @@ python local_judge/llm_judge.py \
     --model_dir /path/to/judge/model \
     --input_file responses.jsonl \
     --output_dir ./results
+```
+
+**Batch Processing**:
+```bash
+python local_judge/llm_judge.py \
+    --model_dir /path/to/judge/model \
+    --input_dir ./results/ \
+    --output_dir ./judgments
 ```
 
 **Expected Input Format**:
@@ -142,8 +144,13 @@ python local_judge/llm_judge.py \
 Extract and process news articles from Common Crawl (27M+ articles, 150+ domains, 150GB+).
 
 ```bash
-# Launch WARC extraction
-python jobs_news.py --num_extractors 1 --domains domains.txt
+cd news
+
+# Launch WARC extraction (requires news-please and htcondor setup)
+python jobs_news.py \
+    --num_processes 1 \
+    --download_dir_warc /path/to/warc \
+    --download_dir_article /path/to/articles
 
 # Convert to JSONL
 python to_jsonl.py --input_dir extracted_articles/ --output_dir jsonl/
@@ -155,16 +162,16 @@ python src/tokenize_for_rag.py --input_dir jsonl/ --output_dir tokenized/
 python src/bm25_jsonl.py --articles_path articles.jsonl --questions_path questions.jsonl
 ```
 
-### Embedding & Retrieval (`embeddding_retrieval/`)
+### Embedding & Retrieval (`embedding_retrieval/`)
 
 KNN/BM25 retrieval pipeline for RAG-augmented forecasting.
 
 ```bash
 # Basic usage
-python embeddding_retrieval/main_new.py --data-dir /path/to/data
+python embedding_retrieval/main_new.py --data-dir /path/to/data
 
 # Custom configuration
-python embeddding_retrieval/main_new.py \
+python embedding_retrieval/main_new.py \
     --data-dir /path/to/data \
     --datasets metaculus manifold
 ```
@@ -174,4 +181,12 @@ python embeddding_retrieval/main_new.py \
 ### API Evaluation (`openrouter_evals/`)
 
 Evaluate commercial models (GPT-4, Claude, Gemini) via OpenRouter API.
+
+```bash
+python openrouter_evals/freeform_evals.py \
+    --questions_file questions.jsonl \
+    --models openai/gpt-5 \
+    --num_generations 1 \
+    --base_save_dir ./results
+```
 
