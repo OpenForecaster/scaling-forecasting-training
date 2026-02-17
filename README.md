@@ -2,7 +2,7 @@
 
 ![OpenForecaster Overview](illustration/fig1preview.png)
 
-Codebase for generating open-ended forecasting questions from news articles (used to develop [OpenForesight](https://huggingface.co/datasets/nikhilchandak/OpenForesight)), scraping data from prediction markets, and RL training of language models on forecasting questions to develop models like [OpenForecaster-8B](https://huggingface.co/nikhilchandak/OpenForecaster-8B). 
+Codebase for generating open-ended forecasting questions from news articles (used to develop [OpenForesight](https://huggingface.co/datasets/nikhilchandak/OpenForesight)), scraping data from prediction markets, and RL training of language models on forecasting questions to develop models like [OpenForecaster-8B](https://huggingface.co/nikhilchandak/OpenForecaster-8B). 69GB of scraped news articles until January 2026 can be found here: [forecast-news.](https://huggingface.co/datasets/shash42/forecast-news)
 
 **Paper**: [Scaling Open-Ended Reasoning To Predict the Future](https://arxiv.org/abs/2512.25070)  
 **Blog**: [openforecaster.github.io](https://openforecaster.github.io) 
