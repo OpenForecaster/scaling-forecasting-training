@@ -178,12 +178,14 @@ def format_date_prompt(
 ) -> str:
     """Format the prompt for single outcome forecasting."""
     
-    prompt = f"""You are provided with a forecasting question (which might be from the past). You have to find not only the answer to the question, but also the earliest date on which the question got resolved FOR SURE (with 100% certainty).
+    prompt = f"""You are provided with a forecasting question (which might be from the past). You have to find not only the answer to the question, but also the earliest date on which the answer to the question could be inferred. Be smart in your inference. The question might contain extra details about the situation/event being asked but I want you to find out the earliest date by which the answer could have been figured out (even without extra details). For example, if you had seen the question 6 months back, could you have figured out the answer confidently.  
         
 Question Title: {question_title}
 Question Background: {background}
+Expected Answer Type: {answer_type}
 
-Think step by step about the information provided and put the answer to the question in <answer> </answer> tags and the earliest date on which the question got resolved for sure in <date> </date> tags. The date should be in the format YYYY-MM-DD.
+Think step by step about the information provided and put the answer to the question in <answer> </answer> tags and the earliest date on which the answer to the question could be inferred with certainty in <date> </date> tags. The date should be in the format YYYY-MM-DD.
+Once you find the answer, please make sure to find THE EARLIEST DATE the answer could have been guessed. Try to search as much as possible across sites/pages to find out when was the earliest time the answer to the question was basically known/determined (or could have been inferred from public knowledge). 
 """
 
     return prompt
@@ -325,7 +327,8 @@ async def evaluate_model(
     inference_engine = OpenRouterInference(
         model=model_name,
         max_tokens=max_tokens,
-        temperature=0.7  # Will be adjusted automatically based on model
+        temperature=0.7,  # Will be adjusted automatically based on model
+        concurrency=batch_size,
     )
     
     # Determine what needs to be processed
@@ -406,13 +409,15 @@ async def evaluate_model(
                 
                 j += 1
 
-
-                prompt = format_date_prompt(
-                    question_title=row["question_title"],
-                    background=row["background"],
-                    resolution_criteria=row["resolution_criteria"],
-                    answer_type=row["answer_type"],
-                )
+            # Built once per question. Previously this sat inside the loop above,
+            # so a question with zero retrieved articles never reassigned it and
+            # silently reused the PREVIOUS question's prompt.
+            prompt = format_date_prompt(
+                question_title=row["question_title"],
+                background=row["background"],
+                resolution_criteria=row["resolution_criteria"],
+                answer_type=row["answer_type"],
+            )
             
             if i == 101:
                 logger.info(f"Prompt: {prompt}")

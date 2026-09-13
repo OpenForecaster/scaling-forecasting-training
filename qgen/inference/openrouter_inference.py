@@ -22,7 +22,8 @@ from qgen.inference.base_inference import BaseInference
 class OpenRouterInference(BaseInference):
     """OpenRouter-based inference engine"""
     
-    def __init__(self, model: str, max_tokens: int = 2048, temperature: float = 0.7):
+    def __init__(self, model: str, max_tokens: int = 2048, temperature: float = 0.7,
+                 concurrency: int = 200):
         """
         Initialize OpenRouter inference engine
         
@@ -30,6 +31,7 @@ class OpenRouterInference(BaseInference):
             model: Model name on OpenRouter
             max_tokens: Maximum tokens for generation
             temperature: Temperature for generation
+            concurrency: Max concurrent in-flight requests (default 200)
         """
         self.model = model
         self.max_tokens = max_tokens
@@ -43,7 +45,9 @@ class OpenRouterInference(BaseInference):
             raise ValueError("OpenRouter API key not found")
             
         self.api_url = "https://openrouter.ai/api/v1/chat/completions"
-        
+        # Cap concurrent requests so large batches do not trigger 429s.
+        self._semaphore = asyncio.Semaphore(concurrency)
+
     async def generate(self, prompts: List[str], **kwargs) -> List[str]:
         """
         Generate completions for prompts using OpenRouter
@@ -78,7 +82,7 @@ class OpenRouterInference(BaseInference):
                     "max_tokens": self.max_tokens,
                 }
                 
-                tasks.append(self._make_request(headers, data, prompt))
+                tasks.append(self._throttled_request(headers, data, prompt))
             
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
@@ -88,6 +92,11 @@ class OpenRouterInference(BaseInference):
     
         return results
     
+    async def _throttled_request(self, headers, data, prompt=None):
+        """Wrap _make_request with a semaphore to limit concurrency."""
+        async with self._semaphore:
+            return await self._make_request(headers, data, prompt)
+
     async def _make_request(self, headers, data, prompt = None):
         """Make a request to the OpenRouter API with retries."""
         max_retries = 5
@@ -148,7 +157,10 @@ class OpenRouterInference(BaseInference):
                         logger.warning(f"Received successful response but no content for model {data.get('model')}. Response: {resp_json}")
                         # Treat as failure if content is None or empty after success
                         # Fall through to retry logic
-                        if resp_json["error"]["code"] == 429:
+                        # NB: a successful-but-empty response carries no "error"
+                        # key, so this must not be indexed directly (it raised
+                        # KeyError and killed the retry path).
+                        if resp_json.get("error", {}).get("code") == 429:
                             logger.warning(f"Rate limit hit. Retrying after 60 seconds...")
                             await asyncio.sleep(60)
 
