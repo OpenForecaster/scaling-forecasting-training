@@ -68,6 +68,7 @@ class ForecastingQuestionGenerator:
         choose_best: bool = False,
         choose_engine = None,
         validate_questions: bool = False,
+        fewshot: bool = False,
     ):
         """
         Initialize the forecasting question generator.
@@ -84,6 +85,7 @@ class ForecastingQuestionGenerator:
         self.choose_best = choose_best
         self.choose_engine = choose_engine
         self.validate_questions = validate_questions
+        self.fewshot = fewshot
         if not self.leakage_engine:
             self.leakage_engine = self.inference_engine
         
@@ -219,242 +221,29 @@ Article:
         return prompt
     
     def _format_freeq_prompt(self, article: Dict) -> str:
-        """Format prompt for free-form short answer questions using XML format."""
-        source_article = f"Title: {article.get('title', '')}\n\n"
-        publish_date = None
-        
-        if 'description' in article and article['description']:
-            source_article += f"Description: {article['description']}\n\n"
-            
-        if 'maintext' in article and article['maintext']:
-            source_article += f"Content: {article['maintext']}\n\n"
-            
-        # if 'date_download' in article and article['date_download']:
-        #     publish_date = article['date_download']
-        
-        if 'date_publish' in article and article['date_publish']:
-            publish_date = article['date_publish']
-            
-        if 'date_modify' in article and article['date_modify']:
-            publish_date = article['date_modify']
-            
-        if publish_date:
-            source_article += f"Published Date: {publish_date}\n"
-            
-        
-        prompt = f"""ASSUME TODAY's DATE IS {publish_date}. PLEASE DO THE FOLLOWING TASK BASED ON THIS ASSUMPTION.""" if publish_date else ""
-        
-        if self.num_questions_per_article == 1:
-            prompt += f"""
-**Task:** Based on the provided news article, generate {self.num_questions_per_article} high quality forecasting question which has a short answer (1 - 3 words), using the XML format specified below.
-Forecasting question should be posed in a way to predict future events. Here, the predictor will have a knowledge cutoff before the article is published and no access to the article, so a forecasting question has to be posed about information explicitly stated in the article. The question should be stated in a forward-looking manner (towards the future).
-The correct answer should be a specific, short text response. The answer should be a WELL DEFINED, SPECIFIC term which the answerer can come up with on its own, without access to the news article. 
+        """Use the same prompt and date fields for one or several candidates."""
+        from .prompts import FREEFORM_GUIDELINES, FREEFORM_EXAMPLE, freeform_output_format
 
-**Example Format**:
-<q1>
-<question_id>0</question_id>
-<question_title>Who will win the Nobel Prize in Literature in 2016?</question_title>
-<background>Question Start Date: 10th January 2016. The Nobel Prize in Literature is awarded annually by the Swedish Academy to authors for their outstanding contributions to literature.</background>
-<resolution_criteria> 
-<ul>
-    <li>
-      <b>Source of Truth</b>: The question will resolve when the Swedish Academy publicly announces the official 2016 Nobel Prize in Literature laureate(s)—typically via a press release on NobelPrize.org (expected on or about October 13, 2016).  
-    </li>
-    <li>
-      <b>Resolution Date</b>: The resolution occurs on the calendar date when the 2016 laureate(s) are formally named
-      (typically mid-October 2016). 
-    </li>
-    <li>
-      <b>Accepted Answer Format</b>: The full name of the laureate exactly as given in the announcement should be provided. If more than one person shares the prize, all names must be listed in the same order as the official communiqué.
-    </li>
-</ul>
-</resolution_criteria>
-<answer>Bob Dylan</answer>
-<answer_type>String (Name)</answer_type>
-</q1>
+        source = f"Title: {article.get('title', '')}\n"
+        if article.get('description'):
+            source += f"Description: {article['description']}\n"
+        source += f"Published Date: {article.get('date_publish', 'unknown')}\n"
+        source += f"Content: {article.get('maintext', '')}"
+        example = FREEFORM_EXAMPLE if self.fewshot else ""
+        return f"""Based on the document, generate between 1 and {self.num_questions_per_article} high-quality, natural, distinct forecasting questions with short answers.
+These questions are for backtesting: the forecaster has access only to information from before the document was published, and cannot see the document. Pose the questions as predictions of future events; the document must resolve their answers indisputably.
 
-The question should follow the structured guidelines below.
+{FREEFORM_GUIDELINES}
 
-### **Guidelines for Creating Short Answer Forecasting Questions**
+{example}
 
-**Title Question Guidelines**
-- **Quality**: The question should be of HIGH QUALITY and hard to answer without access to the article. It should not be about any minute details in the article. THE QUESTION SHOULD BE SUCH THAT ITS ANSWER REVEALS A KEY PIECE OF INFORMATION, FROM THE ARTICLE, WHICH HAS MAXIMAL IMPACT.
-- **Specific and Answerable**: The question to be created SHOULD BE FREE-FORM and have a unique, specific answer (a single word, or short phrase) without access to the article. The answer to the question should be definite, well-defined and NOT NUMERIC. IT SHOULD ALSO NOT BE UNCERTAIN like "above XYZ" OR A RANGE LIKE "between XYZ and ABC". Avoid creating binary questions (yes/no, either/or) or questions with a list of specific options (multiple choice).
-- **Answerable based on article**: Each question must have a CLEAR AND DEFINITE answer based on information stated in the article. Given the question, the content of the article should be able to resolve the answer to the question INDISPUTABLY WITHOUT ANY AMBIGUITY OR UNCERTAINTY. THE ARTICLE SHOULD NOT STATE THAT THE ANSWER IS TENTATIVE OR AN ESTIMATE OR LIKELY. The answer SHOULD HAVE HAPPENED BY NOW.
-- **Temporal Information**: The question should not be about recall of (past) facts or events known before the article publish date. Include any temporal information necessary to answer the question (like by which month, year, etc.) in the question. The question should always be posed in a forward-looking manner. 
-- **Direct and Precise**: Titles must be straightforward and unambiguous, avoiding vague terms. Use future tense when appropriate.
-- **Resolution Criteria**: ALWAYS INCLUDE A BRIEF RESOLUTION CRITERIA in the question title. This is often the date by which the question will be resolved. For example, resolution dates such as "by {{month_name}}, {{year}}?" or "in {{month_name}}, {{year}}?". THE RESOLUTION DATE SHOULD BE BASED ON (AND FAITHFUL TO) THE CONTENT OR PUBLICATION DATE OF THE ARTICLE.
-- **No references to article or future information**: DO NOT refer to the specific article, such as by saying "in the article". The forecaster does not have access to the article, its metadata or any information beyond the article publish date.
-- **Question Types**: Focus on "Who", "What", "When", "Where" questions that have concrete answers.
-- **Understandability**: The question title should have ALL the information to be understandable by a 10 year old. It should be independently understandable without the article.
-- **Tense**. ALWAYS POSE THE QUESTION IN A FORWARD-LOOKING MANNER. THE QUESTION SHOULD BE IN FUTURE TENSE. Try to use phrases like "What will", "Who will", "When will", "Where will", "How much/many will" etc. It should appear as a forecasting question and not past prediction. 
+Document:
+{source}
 
+Return only XML, with consecutive blocks <q1>, <q2>, etc. and question_id values 0, 1, etc. Use the fields in the order below, with YYYY-MM-DD dates. Return at least one question and at most {self.num_questions_per_article}; do not include analysis, ranking, or commentary.
 
-**Answer Guidelines**
-- **Faithfulness to Article**: The answer should be based on information explicitly stated in the article, and not implications or your own knowledge. IT SHOULD BE STATED VERBATIM IN THE ARTICLE.
-- **Non-Numeric**: The answer should not be a number or a percentage. It can be a word, phrase, date, location, etc BUT NOT MORE THAN 3 WORDS.
-- **Definite** - Given the question and the article, the answer should be CLEAR, CONCRETE, CERTAIN AND DERIVABLE from the article. It should be short, WELL-DEFINED TERM and not uncertain or vague. It SHOULD NOT BE A RANGE like "between XYZ and ABC" or "above XYZ" or "below PQR".
-- **Resolved** - The answer MUST be something that has already happened or is happening now. It should be resolved given today's date and not be something that will happen in the future.
-- **Specificity**: The answer should be specific enough to be unambiguous. Avoid overly general answers.
-- **Conciseness**: Keep answers short - typically 1-3 words, occasionally a short phrase if necessary.
-- **Exactness**: For names, use the exact names mentioned (full name, if possible).
-- **Uniqueness**: The answer should be unique and THE ONLY CORRECT ANSWER to the question. 
-- **No Ambiguity**: The answer should be indisputable and not be open to multiple interpretations. IT SHOULD BE PRECISE AND NOT A RANGE OR UNCERTAIN ESTIMATE.
-
-**Background Guidelines**
-- **Mention Question Opening Date**: ALWAYS INCLUDE THE START DATE OF THE QUESTION IN THE BACKGROUND. IT SHOULD BE AT LEAST A FEW DAYS (OR WEEKS IF THE QUESTION IS ABOUT A LONG-TERM EVENT) BEFORE THE ARTICLE'S PUBLISH DATE AND ALSO BEFORE THE RESOLUTION DATE OF THE QUESTION. CONSEQUENTLY, THE BACKGROUND SHOULD NOT CONTAIN ANY INFORMATION WHICH HAS HAPPENED AFTER THE START DATE OF THE QUESTION.
-- **Necessary Context**: The answerer does not have access to the article, so include MINIMAL CONTEXT required to understand the question keeping in mind the question opening date. Do not give (extra) details of the event from the article as background. If required, EITHER pose the event as a hypothetical scenario as if it were to happen in the future OR describe it as happening (unfolding) in real time. Describe any unfamiliar terms or concepts in the question title. 
-- **SHOULD NOT HELP ANSWER**: WHILE PROVIDING THE CONTEXT, DO NOT REFER OR MENTION OR LEAK THE ACTUAL ANSWER. The background must not help answer the forecasting question. DO NOT INCLUDE ANY INFORMATION from the article or elsewhere that either directly or indirectly (even partially) reveals the answer.
-- **No Additional Knowledge**: Do not add any knowledge beyond what is required to understand the question. Only include information necessary to understand the question and its context. 
-- **Tense**. ALWAYS POSE THE BACKGROUND INFORMATION IN CURRENT TENSE. Only provide minimal information which is known until the question opening date.
-
-**Resolution Criteria**
-- **Necessary Criteria**: State the EXACT conditions by which the outcome will be judged. Include the criteria which determines how the question will be resolved. state the conditions by which the outcome will be judged. 
-- **Date and Source of Resolution**: Always state the date and the source by which the question will be resolved. For example, resolution dates such as "by {{month_name}}, {{year}}?" or "in {{month_name}}, {{year}}?", and potential source(s) of resolution such as "based on {{news source}}", "reports from {{official name}}", etc. THE RESOLUTION DATE SHOULD BE CHOSEN THOUGHTFULLY AS THE ANSWER'S VALIDITY AND SOUNDNESS DEPENDS ON IT. THE RESOLUTION DATE SHOULD BE SUCH THAT THE ANSWER CAN BE RESOLVED DEFINITELY AND INDISPUTABLY FROM THE CONTENT OR PUBLICATION DATE OF THE ARTICLE. IT SHOULD MENTION BY WHEN IS THE OUTCOME OF THE QUESTION EXPECTED TO HAPPEN. HOWEVER, IT SHOULD NOT LEAK OR MENTION ANYTHING ABOUT THE ARTICLE. 
-- **Details**: Be as detailed as possible in creating the resolution criteria for resolving the question as cleanly as possible. There should be no ambiguity in the resolution criteria.
-- **Expectation and Format of Answer**: Based on the actual answer, the resolution criteria should state how precise the expected answer should be and in what format it should be. For example, if the actual answer is a date, the resolution criteria should specify how detailed the expected date should be -- only year, or both month and year, or day, month, and year all together. DO NOT GIVE THE ACTUAL DATE (ANSWER). If the actual answer is a percentage, then the criteria should state the expected answer should be a percentage. DO NOT GIVE THE ACTUAL PERCENTAGE.  If the actual answer is in certain unit, then the criteria should specify that. THE RESOLUTION CRITERIA SHOULD MAKE IT EXACTLY CLEAR AND PRECISE WHAT IS EXPECTED FROM THE ANSWERER AND IN WHAT FORMAT AND HOW IT WILL BE CHECKED LATER. IF GIVING AN EXAMPLE, IT SHOULD BE VERY GENERIC AND AS FAR AWAY FROM THE ACTUAL ANSWER AS POSSIBLE.
-- **SHOULD NOT HELP ANSWER**: The resolution criteria must not directly help answer the forecasting question. DO NOT INCLUDE ANY INFORMATION from the article or elsewhere that either directly or indirectly (even partially) reveals the answer. DO NOT REFER OR MENTION OR LEAK THE ACTUAL ANSWER HERE.
-
-**Answer Type Guidelines**
-- **Expected Format**: The answer type should be either "numeric (XYZ)" if the answer is a number (of any kind) or "string (XYZ)" in all other cases. In numeric cases, XYZ should be the exact type of number expected. For example, "numeric (integer)", "numeric (decimal)", "numeric (percentage)", "numeric (whole number)", etc. In string cases, XYZ should broadly be the category of string expected. For example, "string (name)", "string (date)", "string (location)", etc. If the category is not clear, use "string (any)". HOWEVER, ALWAYS TRY TO CREATE QUESTIONS WHERE THE ANSWER CATEGORY IS CLEAR AND PRECISE.
-
-**Question Quality Criteria**
-- **Forecastable**: The question should be something that could reasonably be predicted or forecasted before the article's publication.
-- **Towards the future**: THE QUESTION SHOULD BE POSED IN A FORWARD-LOOKING MANNER.
-- **Interesting**: The question should be about a meaningful event or outcome, not trivial details.
-- **Impactful**: The question should be such that if its answer is forecasted ahead of time, it should have significant (downstream) impact (relevant to high number of people).
-- **Difficulty**: While the question should be hard to answer without access to the article, it should also not be unreasonably difficult.
-- **Verifiable**: The answer should be something that can be EXACTLY verified from the article itself.
-- **Time-bound**: Include clear timeframes or deadlines when relevant.
-- **Free-form**: If possible, avoid creating binary questions (yes/no, either/or) or questions with a list of specific options (multiple choice).
-
-Generate {self.num_questions_per_article} high-quality short answer forecasting questions based on the provided article. Use the XML format with question_id value "0". DO NOT INCLUDE ANY ANALYSIS, RANKING, OR ADDITIONAL COMMENTARY.
-
-Article:
-{source_article}
-
-**Required Output Format**:
-<q1>
-<question_id>0</question_id>
-<question_title>[Question 1]</question_title>
-<background>[Background 1]</background>
-<resolution_criteria>[Resolution Criteria 1]</resolution_criteria>
-<answer>[Answer 1]</answer>
-<answer_type>[Answer Type 1]</answer_type>
-</q1>
+{freeform_output_format(self.num_questions_per_article)}
 """
-        
-        
-        elif self.num_questions_per_article > 1:
-            prompt += f"""
-**Task:** Based on the provided news article, generate {self.num_questions_per_article} high-quality, DIVERSE forecasting questions which have a short answer (1 - 3 words), using the XML format specified below.
-Each forecasting question should be posed in a way to predict future events. Here, the predictor will have a knowledge cutoff before the article is published and no access to the article, so a forecasting question has to be posed about information explicitly stated in the article. The question should be stated in a forward-looking manner (towards the future).
-The correct answer should be a specific, short text response. The answer should be a WELL DEFINED, SPECIFIC term which the answerer can come up with on its own, without access to the news article. 
-
-**Example Format**:
-<q1>
-<question_id>0</question_id>
-<question_title>Who will win the Nobel Prize in Literature in 2016?</question_title>
-<background>Question Start Date: 10th January 2016. The Nobel Prize in Literature is awarded annually by the Swedish Academy to authors for their outstanding contributions to literature.</background>
-<resolution_criteria> 
-<ul>
-    <li>
-      <b>Source of Truth</b>: The question will resolve when the Swedish Academy publicly announces the official 2016 Nobel Prize in Literature laureate(s)—typically via a press release on NobelPrize.org (expected on or about October 13, 2016).  
-    </li>
-    <li>
-      <b>Resolution Date</b>: The resolution occurs on the calendar date when the 2016 laureate(s) are formally named
-      (typically mid-October 2016). 
-    </li>
-    <li>
-      <b>Accepted Answer Format</b>: The full name of the laureate exactly as given in the announcement should be provided. If more than one person shares the prize, all names must be listed in the same order as the official communiqué.
-    </li>
-</ul>
-</resolution_criteria>
-<answer>Bob Dylan</answer>
-<answer_type>String (Name)</answer_type>
-</q1>
-
-The question should follow the structured guidelines below.
-
-### **Guidelines for Creating Short Answer Forecasting Questions**
-
-**Title Question Guidelines**
-- **Quality**: The question should be of HIGH QUALITY and hard to answer without access to the article. It should not be about any minute details in the article. THE QUESTION SHOULD BE SUCH THAT ITS ANSWER REVEALS A KEY PIECE OF INFORMATION, FROM THE ARTICLE, WHICH HAS MAXIMAL IMPACT.
-- **Specific and Answerable**: The question to be created SHOULD BE FREE-FORM and have a unique, specific answer (a single word, or short phrase) without access to the article. The answer to the question should be definite, well-defined and NOT NUMERIC. IT SHOULD ALSO NOT BE UNCERTAIN like "above XYZ" OR A RANGE LIKE "between XYZ and ABC". Avoid creating binary questions (yes/no, either/or) or questions with a list of specific options (multiple choice).
-- **Answerable based on article**: Each question must have a CLEAR AND DEFINITE answer based on information stated in the article. Given the question, the content of the article should be able to resolve the answer to the question INDISPUTABLY WITHOUT ANY AMBIGUITY OR UNCERTAINTY. THE ARTICLE SHOULD NOT STATE THAT THE ANSWER IS TENTATIVE OR AN ESTIMATE OR LIKELY. The answer SHOULD HAVE HAPPENED BY NOW.
-- **Temporal Information**: The question should not be about recall of (past) facts or events known before the article publish date. Include any temporal information necessary to answer the question (like by which month, year, etc.) in the question. The question should always be posed in a forward-looking manner. 
-- **Direct and Precise**: Titles must be straightforward and unambiguous, avoiding vague terms. Use future tense when appropriate.
-- **Resolution Criteria**: ALWAYS INCLUDE A BRIEF RESOLUTION CRITERIA in the question title. This is often the date by which the question will be resolved. For example, resolution dates such as "by {{month_name}}, {{year}}?" or "in {{month_name}}, {{year}}?". THE RESOLUTION DATE SHOULD BE BASED ON (AND FAITHFUL TO) THE CONTENT OR PUBLICATION DATE OF THE ARTICLE.
-- **No references to article or future information**: DO NOT refer to the specific article, such as by saying "in the article". The forecaster does not have access to the article, its metadata or any information beyond the article publish date.
-- **Question Types**: Focus on "Who", "What", "When", "Where" questions that have concrete answers.
-- **Understandability**: The question title should have ALL the information to be understandable by a 10 year old. It should be independently understandable without the article.
-- **Tense**. ALWAYS POSE THE QUESTION IN A FORWARD-LOOKING MANNER. THE QUESTION SHOULD BE IN FUTURE TENSE. Try to use phrases like "What will", "Who will", "When will", "Where will", "How much/many will" etc. It should appear as a forecasting question and not past prediction. 
-
-**Answer Guidelines**
-- **Faithfulness to Article**: The answer should be based on information explicitly stated in the article, and not implications or your own knowledge. IT SHOULD BE STATED VERBATIM IN THE ARTICLE.
-- **Non-Numeric**: The answer should not be a number or a percentage. It can be a word, phrase, date, location, etc BUT NOT MORE THAN 3 WORDS.
-- **Definite** - Given the question and the article, the answer should be CLEAR, CONCRETE, CERTAIN AND DERIVABLE from the article. It should be short, WELL-DEFINED TERM and not uncertain or vague. It SHOULD NOT BE A RANGE like "between XYZ and ABC" or "above XYZ" or "below PQR".
-- **Resolved** - The answer MUST be something that has already happened or is happening now. It should be resolved given today's date and not be something that will happen in the future.
-- **Specificity**: The answer should be specific enough to be unambiguous. Avoid overly general answers.
-- **Conciseness**: Keep answers short - typically 1-3 words, occasionally a short phrase if necessary.
-- **Exactness**: For names, use the exact names mentioned (full name, if possible).
-- **Uniqueness**: The answer should be unique and THE ONLY CORRECT ANSWER to the question. 
-- **No Ambiguity**: The answer should be indisputable and not be open to multiple interpretations. IT SHOULD BE PRECISE AND NOT A RANGE OR UNCERTAIN ESTIMATE.
-
-**Background Guidelines**
-- **Mention Question Opening Date**: ALWAYS INCLUDE THE START DATE OF THE QUESTION IN THE BACKGROUND. IT SHOULD BE AT LEAST A FEW DAYS (OR WEEKS IF THE QUESTION IS ABOUT A LONG-TERM EVENT) BEFORE THE ARTICLE'S PUBLISH DATE AND ALSO BEFORE THE RESOLUTION DATE OF THE QUESTION. CONSEQUENTLY, THE BACKGROUND SHOULD NOT CONTAIN ANY INFORMATION WHICH HAS HAPPENED AFTER THE START DATE OF THE QUESTION.
-- **Necessary Context**: The answerer does not have access to the article, so include MINIMAL CONTEXT required to understand the question keeping in mind the question opening date. Do not give (extra) details of the event from the article as background. If required, EITHER pose the event as a hypothetical scenario as if it were to happen in the future OR describe it as happening (unfolding) in real time. Describe any unfamiliar terms or concepts in the question title. 
-- **SHOULD NOT HELP ANSWER**: WHILE PROVIDING THE CONTEXT, DO NOT REFER OR MENTION OR LEAK THE ACTUAL ANSWER. The background must not help answer the forecasting question. DO NOT INCLUDE ANY INFORMATION from the article or elsewhere that either directly or indirectly (even partially) reveals the answer.
-- **No Additional Knowledge**: Do not add any knowledge beyond what is required to understand the question. Only include information necessary to understand the question and its context. 
-- **Tense**. ALWAYS POSE THE BACKGROUND INFORMATION IN CURRENT TENSE. Only provide minimal information which is known until the question opening date.
-
-**Resolution Criteria**
-- **Necessary Criteria**: State the EXACT conditions by which the outcome will be judged. Include the criteria which determines how the question will be resolved. state the conditions by which the outcome will be judged. 
-- **Date and Source of Resolution**: Always state the date and the source by which the question will be resolved. For example, resolution dates such as "by {{month_name}}, {{year}}?" or "in {{month_name}}, {{year}}?", and potential source(s) of resolution such as "based on {{news source}}", "reports from {{official name}}", etc. THE RESOLUTION DATE SHOULD BE CHOSEN THOUGHTFULLY AS THE ANSWER'S VALIDITY AND SOUNDNESS DEPENDS ON IT. THE RESOLUTION DATE SHOULD BE SUCH THAT THE ANSWER CAN BE RESOLVED DEFINITELY AND INDISPUTABLY FROM THE CONTENT OR PUBLICATION DATE OF THE ARTICLE. IT SHOULD MENTION BY WHEN IS THE OUTCOME OF THE QUESTION EXPECTED TO HAPPEN. HOWEVER, IT SHOULD NOT LEAK OR MENTION ANYTHING ABOUT THE ARTICLE. 
-- **Details**: Be as detailed as possible in creating the resolution criteria for resolving the question as cleanly as possible. There should be no ambiguity in the resolution criteria.
-- **Expectation and Format of Answer**: Based on the actual answer, the resolution criteria should state how precise the expected answer should be and in what format it should be. For example, if the actual answer is a date, the resolution criteria should specify how detailed the expected date should be -- only year, or both month and year, or day, month, and year all together. DO NOT GIVE THE ACTUAL DATE (ANSWER). If the actual answer is a percentage, then the criteria should state the expected answer should be a percentage. DO NOT GIVE THE ACTUAL PERCENTAGE.  If the actual answer is in certain unit, then the criteria should specify that. THE RESOLUTION CRITERIA SHOULD MAKE IT EXACTLY CLEAR AND PRECISE WHAT IS EXPECTED FROM THE ANSWERER AND IN WHAT FORMAT AND HOW IT WILL BE CHECKED LATER. IF GIVING AN EXAMPLE, IT SHOULD BE VERY GENERIC AND AS FAR AWAY FROM THE ACTUAL ANSWER AS POSSIBLE.
-- **SHOULD NOT HELP ANSWER**: The resolution criteria must not directly help answer the forecasting question. DO NOT INCLUDE ANY INFORMATION from the article or elsewhere that either directly or indirectly (even partially) reveals the answer. DO NOT REFER OR MENTION OR LEAK THE ACTUAL ANSWER HERE.
-
-**Answer Type Guidelines**
-- **Expected Format**: The answer type should be either "numeric (XYZ)" if the answer is a number (of any kind) or "string (XYZ)" in all other cases. In numeric cases, XYZ should be the exact type of number expected. For example, "numeric (integer)", "numeric (decimal)", "numeric (percentage)", "numeric (whole number)", etc. In string cases, XYZ should broadly be the category of string expected. For example, "string (name)", "string (date)", "string (location)", etc. If the category is not clear, use "string (any)". HOWEVER, ALWAYS TRY TO CREATE QUESTIONS WHERE THE ANSWER CATEGORY IS CLEAR AND PRECISE.
-
-**Question Quality Criteria**
-- **Forecastable**: The question should be something that could reasonably be predicted or forecasted before the article's publication.
-- **Towards the future**: THE QUESTION SHOULD BE POSED IN A FORWARD-LOOKING MANNER.
-- **Interesting**: The question should be about a meaningful event or outcome, not trivial details.
-- **Impactful**: The question should be such that if its answer is forecasted ahead of time, it should have significant (downstream) impact (relevant to high number of people).
-- **Difficulty**: While the question should be hard to answer without access to the article, it should also not be unreasonably difficult.
-- **Verifiable**: The answer should be something that can be EXACTLY verified from the article itself.
-- **Time-bound**: Include clear timeframes or deadlines when relevant.
-- **Free-form**: If possible, avoid creating binary questions (yes/no, either/or) or questions with a list of specific options (multiple choice).
-
-Generate {self.num_questions_per_article} high-quality, DIVERSE short answer forecasting questions based on the provided article. Use the XML format with question_id value "0", "1", "2", etc. DO NOT INCLUDE ANY ANALYSIS, RANKING, OR ADDITIONAL COMMENTARY.
-
-Article:
-{source_article}
-
-**Required Output Format**:
-<q1>
-<question_id>0</question_id>
-<question_title>[Question 1]</question_title>
-<background>[Background 1]</background>
-<resolution_criteria>[Resolution Criteria 1]</resolution_criteria>
-<answer>[Answer 1]</answer>
-<answer_type>[Answer Type 1]</answer_type>
-</q1>
-..
-<q{self.num_questions_per_article}>
-<question_id>{self.num_questions_per_article - 1}</question_id>
-<question_title>[Question {self.num_questions_per_article}]</question_title>
-<background>[Background {self.num_questions_per_article}]</background>
-<resolution_criteria>[Resolution Criteria {self.num_questions_per_article}]</resolution_criteria>
-<answer>[Answer {self.num_questions_per_article}]</answer>
-<answer_type>[Answer Type {self.num_questions_per_article}]</answer_type>
-</q{self.num_questions_per_article}>
-"""
-        
-        
-        return prompt
 
     def _load_existing_results(self, output_path: str) -> Dict[str, Dict]:
         """Loads existing results from the output file."""
@@ -535,11 +324,15 @@ Article:
                 logger.info(f"Marking article with URL {url} for reprocessing due to non-string generated questions")
                 continue
             
-            all_q_present = True 
-            for q_num in range(1, self.num_questions_per_article + 1):
-                if f"<q{q_num}>" not in generated_text or f"</q{q_num}>" not in generated_text or f"<question_id>{q_num - 1}</question_id>" not in generated_text:
-                    all_q_present = False
-                    break
+            if self.use_freeq:
+                questions = self._extract_questions_from_text(generated_text)
+                all_q_present = bool(questions) and all(self.extract_final_question(question) for question in questions)
+            else:
+                all_q_present = True
+                for q_num in range(1, self.num_questions_per_article + 1):
+                    if f"<q{q_num}>" not in generated_text or f"</q{q_num}>" not in generated_text or f"<question_id>{q_num - 1}</question_id>" not in generated_text:
+                        all_q_present = False
+                        break
                 
             # Check if generated_questions is empty, None, or contains an error message
             if (not generated_text or not all_q_present or 
@@ -741,6 +534,8 @@ Article:
         for url, result in existing_results.items():
             condition = result.get("individual_validation_done", 0) != 1
             for i in range(1, self.num_questions_per_article + 1):
+                if not result.get(f"q{i}"):
+                    continue
                 condition = condition or len(result.get(f"q{i}_validation_response", "")) <= 1
                 
             if condition:
@@ -842,6 +637,8 @@ Article:
                 all_present = True 
                 # Set validation to 0 for empty questions
                 for q_num in range(1, self.num_questions_per_article + 1):
+                    if not existing_results[url].get(f"q{q_num}"):
+                        continue
                     if f"q{q_num}_valid" not in existing_results[url] or f"q{q_num}_validation_response" not in existing_results[url]:
                         all_present = False
                         break
@@ -1185,95 +982,8 @@ Article:
         return questions
 
     def extract_final_question(self, choose_best_output: str) -> str:
-        """
-        Extract the final question content from choose_best output.
-        Always takes the last match if multiple questions are found.
-        
-        Args:
-            choose_best_output: The output from choose_best processing
-            
-        Returns:
-            The extracted question content in XML format, or empty string if not found
-        """
-        import re
-        
-        if not choose_best_output:
-            return ""
-        
-        # Check for "NO GOOD QUESTION" case
-        if "NO GOOD QUESTION" in choose_best_output.upper():
-            return ""
-        
-        # # Extract all q1 blocks using regex and take the last one
-        # # This pattern captures everything between <q1> and </q1> tags
-        # pattern = r'<q1>(.*?)</q1>'
-        # matches = re.findall(pattern, choose_best_output, re.DOTALL)
-        
-        # if matches:
-        #     # Return the last (most recent) complete q1 block including the tags
-        #     return f"<q1>{matches[-1]}</q1>"
-        
-        
-        # # Fallback: try to extract without requiring exact q1 tags
-        # # Look for the question structure with question_id, question_title, etc.
-        # question_pattern = r'<question_id>.*?</question_id>.*?<question_title>.*?</question_title>.*?<background>.*?</background>.*?<resolution_criteria>.*?</resolution_criteria>.*?<answer>.*?</answer>.*?<answer_type>.*?</answer_type>'
-        # matches = re.findall(question_pattern, choose_best_output, re.DOTALL)
-        
-        # if matches:
-        #     content = matches[-1]
-        #     if not content.startswith('<q1>'):
-        #         content = f"<q1>\n{content}\n</q1>"
-        #     return content
-        
-        
-        # Fallback: For each tag, find the last opening tag and extract from there to its closing tag
-        def extract_last_tag_block(text, tag):
-            open_tag = f"<{tag}>"
-            close_tag = f"</{tag}>"
-            last_open = text.rfind(open_tag)
-            if last_open == -1:
-                return ""
-            start = last_open
-            end = text.find(close_tag, start)
-            if end == -1:
-                return ""
-            end += len(close_tag)
-            return text[start:end]
-
-        tags = [
-            "question_id",
-            "question_title",
-            "background",
-            "resolution_criteria",
-            "answer",
-            "answer_type"
-        ]
-        
-        blocks = []
-        for tag in tags:
-            block = extract_last_tag_block(choose_best_output, tag)
-            if not block:
-                break
-            blocks.append(block)
-
-        if len(blocks) == len(tags):
-            content = "\n".join(blocks)
-            if not content.startswith('<q1>'):
-                content = f"<q1>\n{content}\n</q1>"
-            fallback_matches = [content]
-        else:
-            fallback_matches = []
-            
-        if fallback_matches:
-            # Take the last match and wrap in q1 tags if not already present
-            content = fallback_matches[-1]
-            if not content.startswith('<q1>'):
-                content = f"<q1>\n{content}\n</q1>"
-            return content
-        
-        # If no valid question structure found, return empty string
-        # logger.warning("Could not extract valid question from choose_best output")
-        return ""
+        from qgen.utils.xml_utils import extract_final_question
+        return extract_final_question(choose_best_output)
         
     def save_results(self, results: List[Dict], output_path: str) -> None:
         """
@@ -1401,11 +1111,11 @@ GO THROUGH EACH QUESTION ONE BY ONE AND ANALYZE IT FOR THE FOLLOWING:
 4. **Impact**: How many people will the outcome of the question be relevant or interesting to? Consider on the basis of significant downstream impact or enabling meaningful action.
 5. **Not Binary/Multiple Choice**: Question SHOULD NOT BE BINARY (yes/no, either ABC or XYZ, etc.) OR MULTIPLE CHOICE (SELECT FROM A LIST OF OPTIONS). It should be free-form (string -- name, date, place, etc.) or numerical (number, percentage, etc.). 
 6. **Understandable**: THe question as a whole (title, background, resolution criteria) should have sufficient details to understand the premise of the question. Every detail should be crystal clear and the question should not be under or over specified. 
-7. **Definite Answer**: EXTRACT THE ACTUAL ANSWER TO THE QUESTION PROVIDED IN ITS <answer> </answer> TAG. The extracted answer should be short, definite, well-defined and not uncertain or vague. It SHOULD NOT BE A PHRASE OR A RANGE like "between XYZ and ABC" or "above XYZ" or "below PQR". 
+7. **Definite Answer**: EXTRACT THE ACTUAL ANSWER TO THE QUESTION PROVIDED IN ITS <answer> </answer> TAG. The extracted answer should be short, definite, well-defined and not uncertain or vague. It SHOULD NOT BE VAGUE OR A RANGE like "between XYZ and ABC" or "above XYZ" or "below PQR".
 
 
 
-ANALYZE EACH QUESTION BASED ON THE ABOVE CRITERIA ONE BY ONE AND CHOOSE THE ONE WHICH PASSES ALL THE ABOVE CRITERIA. IF MULTIPLE QUESTIONS SATISFY THE CRITERIA, CHOOSE THE ONE WHICH WILL HAVE THE HIGHEST IMPACT (AFFECTS OR IS RELEVANT TO THE MOST NUMBER OF PEOPLE). IF NO QUESTION MEETS THE CRITERIA, RETURN "NO GOOD QUESTION FOUND". OTHERWISE, RETURN THE BEST QUESTION IN THE SAME FORMAT AS THE INPUT. 
+ANALYZE EACH QUESTION BASED ON THE ABOVE CRITERIA ONE BY ONE AND CHOOSE THE ONE WHICH PASSES ALL THE ABOVE CRITERIA. IF MULTIPLE QUESTIONS SATISFY THE CRITERIA, CHOOSE THE ONE WHICH WILL HAVE THE HIGHEST IMPACT (AFFECTS OR IS RELEVANT TO THE MOST NUMBER OF PEOPLE). IF NO QUESTION MEETS THE CRITERIA, RETURN "NO GOOD QUESTION FOUND". OTHERWISE, RETURN THE BEST QUESTION IN THE SAME FORMAT AS THE INPUT. Preserve all its fields, including start_date and resolution_date when present; omit those date tags for older inputs without them.
 
 **Generated Questions:**
 {questions_text}
@@ -1414,7 +1124,9 @@ ANALYZE EACH QUESTION BASED ON THE ABOVE CRITERIA ONE BY ONE AND CHOOSE THE ONE 
 <q1>
 <question_id>0</question_id>
 <question_title>[ORIGINAL Title of the best question]</question_title>
+<start_date>[ORIGINAL start_date, if provided]</start_date>
 <background>[ORIGINAL Background of the best question]</background>
+<resolution_date>[ORIGINAL resolution_date, if provided]</resolution_date>
 <resolution_criteria>
 <ul>
     <li> <b>Source of Truth</b>: [ORIGINAL Source of Truth of the best question] </li>
@@ -1445,7 +1157,7 @@ GO THROUGH EACH SEGMENT OF THE QUESTION ONE BY ONE (TITLE, BACKGROUND, RESOLUTIO
 
 1. **Tense and Details**: FIRST CHECK WHETHER THE QUESTION IS NOT UNDER SPECIFIED OR STATED IN PAST TENSE. IT IS FINE IF THE QUESTION IS STATED IN CURRENT OR FUTURE TENSE. 
 2. **Definite resolution of the answer by the article**: CHECK WHETHER THE ANSWER TO THE QUESTION IS SOUND, CLEAR AND PRESENT IN OR CAN BE DERIVED FROM THE ARTICLE. THE ARTICLE SHOULD RESOLVE THE ANSWER DEFINITELY AND IN AN INDISPUTABLE MANNER (WITHOUT ANY AMBIGUITY). THIS IS THE MOST IMPORTANT CRITERIA.
-3. **Well-defined Answer**: The answer to the question should be short (NOT MORE THAN 3 WORDS). IT SHOULD NOT BE A PHRASE AND SHOULD BE SOMETHING WHICH IS CONCRETE, SPECIFIC AND WELL-DEFINED.
+3. **Well-defined Answer**: The answer to the question should be a word or short phrase, up to a few words, with a concrete, specific, well-defined meaning. Paraphrases of the same answer are acceptable.
 4. **Non-Numeric**: THE *ANSWER TYPE* SHOULD NOT BE NUMERIC LIKE A PERCENTAGE, INTEGER, DECIMAL, OR A RANGE.
 5. **Single Correct Answer**: ANALYZE WHETHER THE QUESTION CAN HAVE MULTIPLE OUTCOMES OR RIGHT ANSWERS. IF SO, THE QUESTION FAILS THIS CRITERIA. OTHERWISE, ENSURE THAT THE PROVIDED ANSWER IS THE SOLE CORRECT ANSWER TO THE QUESTION. IT SHOULD NOT BE THE CASE THAT THE QUESTION CAN HAVE MULTIPLE (DISTINCT) CORRECT ANSWERS.
 
@@ -1467,14 +1179,14 @@ If ALL the above criteria pass (question is stated as required, answer to the wh
         return f"""
 **Task:** You will be provided with a forecasting question. Your job is to ANALYZE whether the question's answer has obviously leaked in the content of the question. The question will have multiple segments -- question title, background, resolution criteria. EXCEPT THE QUESTION TITLE, GO THROUGH EACH SEGMENT STEP BY STEP and check if any part DIRECTLY leaks the actual answer. If leakage is found, ONLY THEN rephrase the problematic parts appropriately to remove the answer while maintaining the question's integrity and focus. DO NOT CHANGE ANY PART OF THE QUESTION UNNECESSARILY. 
 
-USE THE SAME XML FORMAT IN YOUR RESPONSE AS IS IN THE INPUT.
+USE THE SAME XML FORMAT IN YOUR RESPONSE AS IS IN THE INPUT. Preserve explicit start_date and resolution_date fields when present; omit those date tags for older inputs without them.
 
 **Generated Question:**
 {questions_text}
 
 **Instructions:**
 1. **Keep the title unchanged**: DO NOT MAKE ANY CHANGE TO THE QUESTION TITLE.
-2. **Keep the start date in the background unchanged**: DO NOT MAKE ANY CHANGE TO THE QUESTION'S START DATE IN THE BACKGROUND.
+2. **Preserve dates**: DO NOT CHANGE start_date OR resolution_date. For older questions, preserve any start date in the background.
 3. **Identify the answer**: First, extract the actual answer from the XML tags for the current question being processed.
 4. **Identify Leakage**: Keeping the extracted answer in mind, check if the  background, or resolution criteria (each of them -- source of truth, resolution date, accepted answer format) contain information that reveals the answer.
 5. **Types of leakage which can be ignored**: The following types of leakage are fine and don't need to be rephrased:
@@ -1500,7 +1212,7 @@ IT IS ALSO POSSIBLE THAT MULTIPLE PARTS OF THE QUESTION HAVE LEAKAGE. YOU SHOULD
 During your analysis, you should:
 - Go through EACH SEGMENT OF THE QUESTION STEP BY STEP INDEPENDENTLY. First <background> and then inside <resolution_criteria>. Under the resolution criteria, go through the source of truth, resolution date, accepted answer format (each of them is a <li> tag) one by one. For each such segment, do the following:
     - Compare the content in the current segment with the actual answer. If ANY PART OF THE ANSWER is mentioned in the current segment, then consider that as a leakage UNLESS THE ACCEPTED ANSWER FORMAT IS BINARY (yes/no, either ABC or XYZ, etc.) OR A LIST OF SPECIFIC OPTIONS.
-    - IF THE CURRENT SEGMENT IS BACKGROUND, DO NOT CHANGE THE QUESTION START DATE.
+    - PRESERVE start_date AND resolution_date, and any start date in an older background.
     - If the current segment is accepted answer format and there is a SPECIFIC EXAMPLE MENTIONED in it ("e.g. XYZ") which is close to the actual answer, then consider that as a leakage.
     - If leakage is found in the current segment, mention "Leakage found -- {{reason for leakage}}". Form the segment with the problematic parts rephrased and mention it as "Replacement -- {{rephrased_text}}." THE REPHRASED TEXT SHOULD BE AS FAR AWAY FROM THE ACTUAL ANSWER AS POSSIBLE. It should now be present in the final output (instead of the original text).
     - Otherwise, mention "No leakage found". In your final output after you finish the analysis, return this segment UNCHANGED.
@@ -1516,7 +1228,9 @@ Output your analysis step by step, and then end your response with the CORRECTED
 <q1>
 <question_id>0</question_id>
 <question_title>[UNCHANGED Question Title]</question_title>
+<start_date>[UNCHANGED start_date, if provided]</start_date>
 <background>[Corrected Background]</background>
+<resolution_date>[UNCHANGED resolution_date, if provided]</resolution_date>
 <resolution_criteria>
 <ul>
     <li> [UNCHANGED Question Start Date] [Corrected Source of Truth] </li>
@@ -1565,4 +1279,4 @@ Original: "What will be the final Brexit vote result?"
 Rephrased: "What will be the final Brexit vote result, considering the Leave campaign's strong position?"
 
 Return the corrected questions in THE SAME XML FORMAT AS THE ORIGINAL.
-""" 
+"""

@@ -97,6 +97,8 @@ async def main():
     )
     
     # Generation parameters
+    parser.add_argument('--fewshot', action='store_true',
+                        help='Include the worked example in the free-form generation prompt')
     parser.add_argument(
         "--num_q_per_article", 
         type=int, 
@@ -187,7 +189,8 @@ async def main():
         choose_engine=choose_engine,
         choose_best=args.choose_best,
         num_questions=args.num_q_per_article,
-        validate_questions=args.validate
+        validate_questions=args.validate,
+        fewshot=args.fewshot
     )
     
     logger.info(f"Output path: {args.output_path}")

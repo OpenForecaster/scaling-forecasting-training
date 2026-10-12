@@ -8,6 +8,7 @@ This module provides functions for:
 """
 
 import re
+from datetime import date
 from typing import Dict, Any, Tuple
 
 
@@ -109,7 +110,11 @@ def extract_final_question(response_text: str) -> str:
     if "NO GOOD QUESTION" in response_text.upper():
         return ""
     
-    # Extract each required tag by finding its last occurrence
+    # Keep fields from one question together, including optional explicit dates.
+    questions = re.findall(r'<q(\d+)>(.*?)</q\1>', response_text, re.DOTALL)
+    if questions:
+        response_text = questions[-1][1]
+
     tags = [
         "question_id",
         "question_title",
@@ -122,11 +127,25 @@ def extract_final_question(response_text: str) -> str:
     blocks = []
     for tag in tags:
         block = extract_tag_content(response_text, tag)
-        if not block:
+        empty_background = tag == 'background' and '<background>' in response_text and '</background>' in response_text
+        if not block and not empty_background:
             # If any required tag is missing, return empty
             return ""
         # Reconstruct the tag with its content
         blocks.append(f"<{tag}>\n{block}\n</{tag}>")
+
+    start = extract_tag_content(response_text, 'start_date')
+    resolution = extract_tag_content(response_text, 'resolution_date')
+    if '<start_date>' in response_text or '<resolution_date>' in response_text:
+        try:
+            if date.fromisoformat(start).isoformat() != start or date.fromisoformat(resolution).isoformat() != resolution:
+                return ""
+        except ValueError:
+            return ""
+        if start >= resolution:
+            return ""
+        blocks.insert(2, f"<start_date>{start}</start_date>")
+        blocks.insert(4, f"<resolution_date>{resolution}</resolution_date>")
     
     # Assemble complete question
     content = "\n".join(blocks)

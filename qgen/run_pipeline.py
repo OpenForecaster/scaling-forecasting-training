@@ -94,6 +94,8 @@ def run_question_generation(args, output_dir):
     cmd.extend(["--freeq", "--check_leakage", "--choose_best", "--validate"])
     
     # Add optional flags
+    if args.fewshot:
+        cmd.append('--fewshot')
     if args.regenerate:
         cmd.append("--regenerate")
     
@@ -380,6 +382,8 @@ def main():
     )
     
     # Generation parameters
+    parser.add_argument('--fewshot', action='store_true',
+                        help='Include the worked example in the free-form generation prompt')
     parser.add_argument(
         "--num_q_per_article",
         type=int,

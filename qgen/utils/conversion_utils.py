@@ -139,6 +139,12 @@ def convert_question_format(entry: Dict[str, Any]) -> Dict[str, Any]:
     for old_field, new_field in field_mappings.items():
         if old_field in entry and new_field not in converted:
             converted[new_field] = entry[old_field]
+
+    # New questions carry dates directly; older questions still use DateProcessor.
+    for tag, field in [('start_date', 'question_start_date'), ('resolution_date', 'resolution_date')]:
+        value = extract_tag_content(final_question, tag)
+        if value:
+            converted[field] = value
     
     return converted
 
